@@ -103,7 +103,9 @@ function buildHtml(code, styleSystem, theme) {
 
 async function screenshotComponent({ code, styleSystem = 'tailwind', theme = 'light', width = 800, height = 600 }) {
   const html = buildHtml(code, styleSystem, theme);
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
   try {
     const page = await browser.newPage();
     await page.setViewportSize({ width, height });
