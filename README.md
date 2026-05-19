@@ -71,3 +71,4 @@ run();
 | `close()` | Close browser |
 
 Screenshots are saved to `screenshots/` in this directory.
+# matrix-browser-editor
