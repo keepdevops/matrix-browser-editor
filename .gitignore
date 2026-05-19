@@ -1,3 +1,10 @@
 node_modules/
 screenshots/
 *.log
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
