@@ -4,6 +4,7 @@
   "description": "Standalone browser automation + UI interaction tool for React apps",
   "main": "index.js",
   "scripts": {
+    "start": "bash scripts/start.sh",
     "server": "node server/index.js",
     "dev:server": "node --watch server/index.js",
     "test": "node run.js",
