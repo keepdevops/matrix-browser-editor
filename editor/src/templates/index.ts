@@ -3,12 +3,20 @@ import { dashboardTemplates } from './definitions/dashboards';
 import { formTemplates } from './definitions/forms';
 import { tableTemplates } from './definitions/tables';
 import { modalTemplates } from './definitions/modals';
+import { cardTemplates } from './definitions/cards';
+import { navTemplates } from './definitions/nav';
+import { chartTemplates } from './definitions/charts';
+import { sidebarTemplates } from './definitions/sidebars';
 
 export const ALL_TEMPLATES: Template[] = [
   ...dashboardTemplates,
   ...formTemplates,
   ...tableTemplates,
   ...modalTemplates,
+  ...cardTemplates,
+  ...navTemplates,
+  ...chartTemplates,
+  ...sidebarTemplates,
 ];
 
 export const CATEGORIES = ['dashboard', 'form', 'table', 'modal', 'card', 'nav', 'chart', 'sidebar'] as const;
