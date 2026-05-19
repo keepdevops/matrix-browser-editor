@@ -4,17 +4,34 @@
   "description": "Standalone browser automation + UI interaction tool for React apps",
   "main": "index.js",
   "scripts": {
-    "test":            "node run.js",
-    "test:layout":     "node run.js layouts",
+    "server": "node server/index.js",
+    "dev:server": "node --watch server/index.js",
+    "test": "node run.js",
+    "test:layout": "node run.js layouts",
     "test:components": "node run.js components",
-    "headed":          "node run.js --headed",
-    "install:browsers": "npx playwright install chromium"
+    "headed": "node run.js --headed",
+    "install:browsers": "npx playwright install chromium",
+    "shutdown": "bash scripts/shutdown.sh"
   },
-  "keywords": ["browser", "playwright", "react", "automation"],
+  "keywords": [
+    "browser",
+    "playwright",
+    "react",
+    "automation"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "playwright": "^1.60.0"
+    "@anthropic-ai/sdk": "^0.97.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "playwright": "^1.60.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.0"
   }
 }
