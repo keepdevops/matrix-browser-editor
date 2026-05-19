@@ -1,8 +1,8 @@
-'use strict';
+import { useEffect, useRef, useMemo } from 'react';
+import { useEditorStore } from '../store/editorStore';
+import { useSessionStore } from '../store/sessionStore';
 
-const { chromium } = require('playwright');
-
-const CDN_MAP = {
+const CDN: Record<string, string[]> = {
   tailwind: ['<script src="https://cdn.tailwindcss.com"></script>'],
   shadcn:   ['<script src="https://cdn.tailwindcss.com"></script>'],
   mui: [
@@ -28,7 +28,7 @@ const CDN_MAP = {
   ],
 };
 
-function stripTypeAnnotations(code) {
+function stripTypeAnnotations(code: string): string {
   return code
     .replace(/:\s*React\.FC[^=]*/g, '')
     .replace(/:\s*React\.CSSProperties/g, '')
@@ -41,26 +41,27 @@ function stripTypeAnnotations(code) {
     .replace(/import\s+type\s+[^;]+;/g, '');
 }
 
-function resolveCdnTags(code, styleSystem) {
-  const tags = [...(CDN_MAP[styleSystem] || CDN_MAP.tailwind)];
-  if (/from ['"]recharts['"]|require\(['"]recharts['"]\)/.test(code)) tags.push(...CDN_MAP.recharts);
-  if (/from ['"]react-chartjs-2['"]|from ['"]chart\.js['"]/.test(code)) tags.push(...CDN_MAP.chartjs);
+function resolveCdnTags(code: string, styleSystem: string): string {
+  const tags = [...(CDN[styleSystem] || CDN.tailwind)];
+  if (/from ['"]recharts['"]|require\(['"]recharts['"]\)/.test(code)) tags.push(...(CDN.recharts ?? []));
+  if (/from ['"]react-chartjs-2['"]|from ['"]chart\.js['"]/.test(code)) tags.push(...(CDN.chartjs ?? []));
   return [...new Set(tags)].join('\n    ');
 }
 
-function buildHtml(code, styleSystem, theme) {
+function buildSrcdoc(code: string, styleSystem: string, theme: string): string {
   const cdnTags = resolveCdnTags(code, styleSystem);
   const bg = theme === 'dark' ? '#0f172a' : '#f8fafc';
   const fg = theme === 'dark' ? '#f1f5f9' : '#0f172a';
   const darkClass = theme === 'dark' ? 'dark' : '';
 
+  // Extract the first exported function/const name to use as root component
   const nameMatch = code.match(/export\s+(?:default\s+)?function\s+(\w+)|export\s+(?:const|let)\s+(\w+)/);
   const componentName = nameMatch ? (nameMatch[1] || nameMatch[2]) : null;
 
-  // Extract named imports from known UMD globals before stripping
   const rechartsMatch = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]recharts['"]/);
   const chartjs2Match = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]react-chartjs-2['"]/);
 
+  // Strip TS-only syntax for Babel standalone (which doesn't handle TS natively in text/babel)
   const strippedCode = stripTypeAnnotations(code)
     .replace(/^import\s+.*from\s+['"]react['"];?/m, '')
     .replace(/^import\s+.*from\s+['"]recharts['"];?/gm, '')
@@ -87,7 +88,7 @@ function buildHtml(code, styleSystem, theme) {
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   ${cdnTags}
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}#root{width:100%}</style>
+  <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}</style>
 </head>
 <body>
   <div id="root"></div>
@@ -101,28 +102,22 @@ function buildHtml(code, styleSystem, theme) {
 </html>`;
 }
 
-async function screenshotComponent({ code, styleSystem = 'tailwind', theme = 'light', width = 800, height = 600 }) {
-  const html = buildHtml(code, styleSystem, theme);
-  const browser = await chromium.launch();
-  try {
-    const page = await browser.newPage();
-    await page.setViewportSize({ width, height });
-    await page.setContent(html, { waitUntil: 'load', timeout: 25000 });
-    // wait for all CDN scripts to load and Babel to transform
-    await page.waitForFunction(
-      () => typeof window.React !== 'undefined' && typeof window.ReactDOM !== 'undefined' && typeof window.Babel !== 'undefined',
-      { timeout: 15000 }
-    ).catch(() => {});
-    // wait for React to mount into #root
-    await page.waitForFunction(() => document.getElementById('root')?.children.length > 0, { timeout: 10000 })
-      .catch(() => {});
-    // settle time for chart libraries using ResizeObserver / async layout
-    await page.waitForTimeout(1500);
-    const buffer = await page.screenshot({ type: 'png', fullPage: false });
-    return buffer.toString('base64');
-  } finally {
-    await browser.close();
-  }
-}
+export function usePreview() {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { code } = useEditorStore();
+  const { styleSystem, theme } = useSessionStore();
 
-module.exports = { screenshotComponent };
+  const srcdoc = useMemo(() => buildSrcdoc(code, styleSystem, theme), [code, styleSystem, theme]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    try {
+      iframe.srcdoc = srcdoc;
+    } catch (err) {
+      console.error('[usePreview] srcdoc error:', err);
+    }
+  }, [srcdoc]);
+
+  return { iframeRef };
+}

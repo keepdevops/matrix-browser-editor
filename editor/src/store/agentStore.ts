@@ -18,20 +18,38 @@ interface AgentState {
   clearMessages: () => void;
 }
 
-function normalizeJson(raw: string): string {
-  // Replace backtick template literals used as string values with proper JSON strings
-  return raw.replace(/:\s*`([\s\S]*?)`/g, (_match, inner) => {
-    const escaped = inner.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
-    return `: "${escaped}"`;
-  });
+function extractCodeField(raw: string): { withoutCode: string; code: string } | null {
+  // Match "code": `...` where the backtick block may contain nested backticks
+  // Strategy: find `"code":` then grab everything between the first ` and the last ` before `\n}`
+  const codeKeyIdx = raw.search(/"code"\s*:\s*`/);
+  if (codeKeyIdx === -1) return null;
+  const openTick = raw.indexOf('`', codeKeyIdx);
+  if (openTick === -1) return null;
+  // Find the closing backtick: last ` before the closing `\n}` of the object
+  const closeTick = raw.lastIndexOf('`');
+  if (closeTick <= openTick) return null;
+  const code = raw.slice(openTick + 1, closeTick);
+  const withoutCode = raw.slice(0, codeKeyIdx) + '"code": "__CODE__"' + raw.slice(closeTick + 1);
+  return { withoutCode, code };
 }
 
 function parseComponent(text: string): ParsedComponent | null {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
-    const normalized = normalizeJson(jsonMatch[0]);
-    const parsed = JSON.parse(normalized);
+    let raw = jsonMatch[0];
+    let extractedCode: string | null = null;
+
+    // Handle backtick-delimited code field from swarm responses
+    if (/"code"\s*:\s*`/.test(raw)) {
+      const extracted = extractCodeField(raw);
+      if (!extracted) return null;
+      raw = extracted.withoutCode;
+      extractedCode = extracted.code;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (extractedCode !== null) parsed.code = extractedCode;
     if (!parsed.code || !parsed.componentName) return null;
     return {
       componentName: parsed.componentName,

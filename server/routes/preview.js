@@ -36,6 +36,14 @@ const CDN_MAP = {
     '<link rel="stylesheet" href="https://unpkg.com/@mantine/core@7/styles.css" />',
     '<script crossorigin src="https://unpkg.com/@mantine/core@7/dist/mantine-core.umd.cjs"></script>',
   ],
+  recharts: [
+    '<script crossorigin src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>',
+    '<script crossorigin src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>',
+  ],
+  chartjs: [
+    '<script crossorigin src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>',
+    '<script crossorigin src="https://unpkg.com/react-chartjs-2@5/dist/index.umd.js"></script>',
+  ],
 };
 
 const DARK_BODY_STYLE = 'background:#0f172a;color:#f1f5f9;';
