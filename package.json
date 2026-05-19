@@ -1,0 +1,20 @@
+{
+  "name": "matrix-browser-editor",
+  "version": "1.0.0",
+  "description": "Standalone browser automation + UI interaction tool for React apps",
+  "main": "index.js",
+  "scripts": {
+    "test":            "node run.js",
+    "test:layout":     "node run.js layouts",
+    "test:components": "node run.js components",
+    "headed":          "node run.js --headed",
+    "install:browsers": "npx playwright install chromium"
+  },
+  "keywords": ["browser", "playwright", "react", "automation"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
