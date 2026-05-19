@@ -1,11 +1,12 @@
-
 import { useSessionStore } from '../../store/sessionStore';
 import { TemplateLibrary } from './TemplateLibrary';
 import { StyleSystemPicker } from './StyleSystemPicker';
+import { ConnectorPanel } from './ConnectorPanel';
 
 const TABS = [
   { id: 'templates' as const, label: 'Templates', icon: '⚡' },
   { id: 'style' as const, label: 'Style', icon: '🎨' },
+  { id: 'connector' as const, label: 'Connector', icon: '🔌' },
 ] as const;
 
 export function Sidebar() {
@@ -36,7 +37,7 @@ export function Sidebar() {
               borderBottom: sidebarTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
               color: sidebarTab === tab.id ? '#a5b4fc' : '#475569',
               cursor: 'pointer',
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: sidebarTab === tab.id ? 600 : 400,
               transition: 'all 0.15s',
             }}
@@ -49,6 +50,7 @@ export function Sidebar() {
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {sidebarTab === 'templates' && <TemplateLibrary />}
         {sidebarTab === 'style' && <StyleSystemPicker />}
+        {sidebarTab === 'connector' && <ConnectorPanel />}
       </div>
     </div>
   );
