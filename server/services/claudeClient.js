@@ -73,6 +73,9 @@ function buildMessages(prompt, styleSystem, theme, templateCode, history, screen
 async function streamComponent({ prompt, styleSystem, theme, templateCode, history, screenshotImage, onChunk, onDone, onError }) {
   const { systemWithStyle, messages } = buildMessages(prompt, styleSystem, theme, templateCode, history, screenshotImage);
 
+  let settled = false;
+  const settle = (fn) => { if (!settled) { settled = true; fn(); } };
+
   try {
     const stream = client.messages.stream({
       model: MODEL,
@@ -96,14 +99,14 @@ async function streamComponent({ prompt, styleSystem, theme, templateCode, histo
 
     stream.on('error', (err) => {
       console.error('[claudeClient] stream error:', err.message);
-      onError(err.message);
+      settle(() => onError(err.message));
     });
 
     await stream.finalMessage();
-    onDone(fullText);
+    settle(() => onDone(fullText));
   } catch (err) {
     console.error('[claudeClient] request failed:', err.message);
-    onError(err.message);
+    settle(() => onError(err.message));
   }
 }
 
