@@ -65,7 +65,7 @@ export function PricingCard() {
         {plans.map(p => (
           <div key={p.name} className={\`rounded-2xl p-6 shadow \${p.highlight ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 dark:text-white'}\`}>
             <h3 className="font-bold text-lg">{p.name}</h3>
-            <p className="text-4xl font-bold mt-3">${annual ? p.annual : p.monthly}<span className="text-base font-normal opacity-70">/mo</span></p>
+            <p className="text-4xl font-bold mt-3">{annual ? p.annual : p.monthly}<span className="text-base font-normal opacity-70">/mo</span></p>
             <ul className="mt-4 space-y-2">
               {p.features.map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm">

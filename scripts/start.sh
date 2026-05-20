@@ -10,5 +10,8 @@ if [ -n "$EXISTING" ]; then
   exit 0
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 echo "Starting matrix-browser-editor on port $PORT..."
-exec node server/index.js
+exec node "$PROJECT_ROOT/server/index.js"

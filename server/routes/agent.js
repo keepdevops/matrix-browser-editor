@@ -1,7 +1,8 @@
 'use strict';
 
 const { Router } = require('express');
-const { streamComponent } = require('../services/swarmClient');
+const swarmClient = require('../services/swarmClient');
+const claudeClient = require('../services/claudeClient');
 const { validate, PromptRequestSchema } = require('../services/codeValidator');
 
 const router = Router();
@@ -26,23 +27,37 @@ router.post('/stream', async (req, res) => {
 
   const { prompt, styleSystem, theme, templateCode, history } = validated;
 
-  await streamComponent({
+  const streamArgs = {
     prompt,
     styleSystem,
     theme,
     templateCode,
     history,
+  };
+
+  // Try swarm first when configured; fall back to direct Claude API on connection error
+  const useSwarm = Boolean(process.env.SWARM_URL);
+
+  const attempt = (client, isFallback) => client.streamComponent({
+    ...streamArgs,
     onChunk: (text) => sendSSE(res, 'delta', text),
     onDone: (fullText) => {
       sendSSE(res, 'done', fullText);
       res.end();
     },
     onError: (message) => {
-      console.error('[agent/stream] claude error:', message);
-      sendSSE(res, 'error', message);
-      res.end();
+      if (useSwarm && !isFallback) {
+        console.warn('[agent/stream] swarm unavailable, falling back to claudeClient:', message);
+        attempt(claudeClient, true);
+      } else {
+        console.error('[agent/stream] error:', message);
+        sendSSE(res, 'error', message);
+        res.end();
+      }
     },
   });
+
+  await attempt(useSwarm ? swarmClient : claudeClient, false);
 });
 
 module.exports = router;

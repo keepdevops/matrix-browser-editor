@@ -6,9 +6,45 @@ const SWARM_URL = process.env.SWARM_URL || 'http://localhost:3002';
 const SWARM_STREAM_PATH = '/api/architect/stream';
 
 /**
+ * The swarm runs multiple agents (frontend, tester, etc.) and streams
+ * their tokens mixed together. We only want the `frontend` agent's output,
+ * then extract the first TSX/TypeScript code block from its markdown.
+ */
+function extractComponentFromMarkdown(text) {
+  // Grab the first ```typescript or ```tsx code block that looks like a React component
+  const codeBlockRe = /```(?:tsx?|typescript)[^\n]*\n([\s\S]*?)```/g;
+  let best = null;
+  let bestLen = 0;
+  let match;
+  while ((match = codeBlockRe.exec(text)) !== null) {
+    const block = match[1].trim();
+    if (block.length > bestLen) {
+      best = block;
+      bestLen = block.length;
+    }
+  }
+  if (!best) return null;
+
+  // Prefer export name, fall back to filename comment
+  const exportMatch =
+    best.match(/export\s+default\s+(?:function|class)\s+(\w+)/) ||
+    best.match(/export\s+(?:function|class|const)\s+(\w+)/) ||
+    best.match(/const\s+(\w+):\s*React\.FC/) ||
+    best.match(/\/\/\s*(\w+)\.tsx?/);
+  const componentName = exportMatch ? exportMatch[1] : 'GeneratedComponent';
+
+  return {
+    componentName,
+    language: 'tsx',
+    description: '',
+    dependencies: [],
+    code: best,
+  };
+}
+
+/**
  * Stream a component generation request through the matrix swarm coordinator.
- * Translates swarm SSE events (token, agent_done, done, error) into the
- * editor's expected callbacks (onChunk, onDone, onError).
+ * Filters for `frontend` agent tokens and extracts the TSX component from markdown.
  */
 function streamComponent({ prompt, styleSystem, theme, templateCode, history, onChunk, onDone, onError }) {
   return new Promise((resolve) => {
@@ -43,12 +79,14 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
       }
 
       let buf = '';
-      let fullText = '';
+      // Track per-agent text; stream the frontend agent's tokens to the client
+      const agentText = {};
+      let selectedAgents = [];
 
       res.on('data', (chunk) => {
         buf += chunk.toString();
         const blocks = buf.split('\n\n');
-        buf = blocks.pop(); // keep incomplete block
+        buf = blocks.pop();
 
         for (const block of blocks) {
           if (!block.trim()) continue;
@@ -65,12 +103,25 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
           let data;
           try { data = JSON.parse(dataStr); } catch { data = dataStr; }
 
-          if (eventName === 'token') {
+          if (eventName === 'selected') {
+            selectedAgents = Array.isArray(data.agents) ? data.agents : [];
+          } else if (eventName === 'token') {
+            const agent = typeof data === 'object' ? (data.agent ?? 'unknown') : 'unknown';
             const delta = typeof data === 'object' ? (data.delta ?? '') : String(data);
-            fullText += delta;
-            onChunk(delta);
+            if (!agentText[agent]) agentText[agent] = '';
+            agentText[agent] += delta;
+            // Only stream the frontend agent's tokens for display
+            if (agent === 'frontend' || agent === 'unknown') onChunk(delta);
           } else if (eventName === 'done') {
-            onDone(fullText);
+            const frontendText = agentText['frontend'] || agentText['unknown'] || Object.values(agentText).join('\n');
+            const component = extractComponentFromMarkdown(frontendText);
+            if (!component) {
+              console.warn('[swarmClient] no TSX code block found in swarm response, triggering fallback');
+              onError('swarm response has no extractable TSX component');
+              resolve();
+              return;
+            }
+            onDone(JSON.stringify(component));
             resolve();
           } else if (eventName === 'error') {
             const msg = typeof data === 'object' ? (data.error ?? JSON.stringify(data)) : String(data);
@@ -78,12 +129,20 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
             onError(msg);
             resolve();
           }
-          // agent_done, selected, stage, synthesis_start — informational, skip
         }
       });
 
       res.on('end', () => {
-        if (fullText) onDone(fullText);
+        if (Object.keys(agentText).length > 0) {
+          const frontendText = agentText['frontend'] || agentText['unknown'] || Object.values(agentText).join('\n');
+          const component = extractComponentFromMarkdown(frontendText);
+          if (component) {
+            onDone(JSON.stringify(component));
+          } else {
+            console.warn('[swarmClient] end: no TSX block, triggering fallback');
+            onError('swarm response has no extractable TSX component');
+          }
+        }
         resolve();
       });
 
@@ -123,9 +182,7 @@ function buildPrompt(prompt, styleSystem, theme, templateCode) {
     full += `Start from this template:\n\`\`\`tsx\n${templateCode}\n\`\`\`\n\n`;
   }
 
-  full += `Request: ${prompt}\n\n`;
-  full += `Respond with ONLY a JSON object — no markdown, no explanation:\n`;
-  full += `{"componentName":"PascalCase","language":"tsx","description":"...","dependencies":[],"code":"..."}`;
+  full += `Request: ${prompt}`;
 
   return full;
 }

@@ -33,22 +33,19 @@ function extractCodeField(raw: string): { withoutCode: string; code: string } | 
   return { withoutCode, code };
 }
 
-function parseComponent(text: string): ParsedComponent | null {
+function tryParseJson(raw: string): ParsedComponent | null {
+  let src = raw;
+  let extractedCode: string | null = null;
+
+  if (/"code"\s*:\s*`/.test(src)) {
+    const extracted = extractCodeField(src);
+    if (!extracted) return null;
+    src = extracted.withoutCode;
+    extractedCode = extracted.code;
+  }
+
   try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    let raw = jsonMatch[0];
-    let extractedCode: string | null = null;
-
-    // Handle backtick-delimited code field from swarm responses
-    if (/"code"\s*:\s*`/.test(raw)) {
-      const extracted = extractCodeField(raw);
-      if (!extracted) return null;
-      raw = extracted.withoutCode;
-      extractedCode = extracted.code;
-    }
-
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(src);
     if (extractedCode !== null) parsed.code = extractedCode;
     if (!parsed.code || !parsed.componentName) return null;
     return {
@@ -61,6 +58,53 @@ function parseComponent(text: string): ParsedComponent | null {
   } catch {
     return null;
   }
+}
+
+// Walk text respecting backtick and double-quoted strings to find top-level JSON objects.
+function extractJsonSegments(text: string): string[] {
+  const segments: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const start = text.indexOf('{', i);
+    if (start === -1) break;
+    let depth = 0;
+    let j = start;
+    let inString = false;
+    let inBacktick = false;
+    while (j < text.length) {
+      const ch = text[j];
+      if (inBacktick) {
+        if (ch === '`') inBacktick = false;
+      } else if (inString) {
+        if (ch === '\\') j++;
+        else if (ch === '"') inString = false;
+      } else {
+        if (ch === '`') inBacktick = true;
+        else if (ch === '"') inString = true;
+        else if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) break; }
+      }
+      j++;
+    }
+    if (depth === 0) {
+      segments.push(text.slice(start, j + 1));
+      i = j + 1;
+    } else {
+      break;
+    }
+  }
+  return segments;
+}
+
+// Swarm concatenates one JSON blob per agent — pick the one with the most actual code.
+function parseComponent(text: string): ParsedComponent | null {
+  const candidates: ParsedComponent[] = [];
+  for (const seg of extractJsonSegments(text)) {
+    const result = tryParseJson(seg);
+    if (result) candidates.push(result);
+  }
+  if (candidates.length === 0) return null;
+  return candidates.reduce((best, c) => c.code.length > best.code.length ? c : best);
 }
 
 export const useAgentStore = create<AgentState>((set, get) => ({
