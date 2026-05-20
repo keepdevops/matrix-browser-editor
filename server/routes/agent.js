@@ -25,7 +25,7 @@ router.post('/stream', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const { prompt, styleSystem, theme, templateCode, history } = validated;
+  const { prompt, styleSystem, theme, templateCode, history, screenshotImage } = validated;
 
   const streamArgs = {
     prompt,
@@ -33,10 +33,12 @@ router.post('/stream', async (req, res) => {
     theme,
     templateCode,
     history,
+    screenshotImage,
   };
 
-  // Try swarm first when configured; fall back to direct Claude API on connection error
-  const useSwarm = Boolean(process.env.SWARM_URL);
+  // Vision requests must bypass swarm (no image support); always use claudeClient
+  if (screenshotImage) console.info('[agent/stream] vision request — routing to claudeClient');
+  const useSwarm = Boolean(process.env.SWARM_URL) && !screenshotImage;
 
   const attempt = (client, isFallback) => client.streamComponent({
     ...streamArgs,

@@ -8,6 +8,7 @@ const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 interface StreamOptions {
   prompt: string;
   templateCode?: string;
+  screenshotImage?: string;
 }
 
 export function useAgentStream() {
@@ -15,7 +16,7 @@ export function useAgentStream() {
   const { setCode, setComponentName, setLanguage } = useEditorStore();
   const { styleSystem, theme } = useSessionStore();
 
-  const send = useCallback(async ({ prompt, templateCode }: StreamOptions) => {
+  const send = useCallback(async ({ prompt, templateCode, screenshotImage }: StreamOptions) => {
     addUserMessage(prompt);
     startAssistantStream();
 
@@ -24,11 +25,14 @@ export function useAgentStream() {
       .slice(-6)
       .map((m) => ({ role: m.role, content: m.content }));
 
+    // Strip data-URL prefix — server expects raw base64
+    const imageBase64 = screenshotImage?.replace(/^data:image\/[^;]+;base64,/, '');
+
     try {
       const response = await fetch(`${SERVER}/api/agent/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, styleSystem, theme, templateCode, history }),
+        body: JSON.stringify({ prompt, styleSystem, theme, templateCode, history, screenshotImage: imageBase64 }),
       });
 
       if (!response.ok) {

@@ -16,7 +16,7 @@ const BTN: React.CSSProperties = {
 
 export function PreviewPane() {
   const { iframeRef } = usePreview();
-  const { theme, setTheme } = useSessionStore();
+  const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { imageUrl, isCapturing, error, capture, dismiss } = useScreenshot();
 
@@ -86,13 +86,21 @@ export function PreviewPane() {
               <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>SCREENSHOT</span>
               <div style={{ display: 'flex', gap: 8 }}>
                 {imageUrl && (
-                  <a
-                    href={imageUrl}
-                    download="component.png"
-                    style={{ ...BTN, textDecoration: 'none', color: '#7dd3fc' }}
-                  >
-                    ↓ Download
-                  </a>
+                  <>
+                    <button
+                      onClick={() => { setPendingScreenshot(imageUrl); dismiss(); }}
+                      style={{ ...BTN, color: '#a5b4fc', borderColor: '#4f46e5' }}
+                    >
+                      ✏ Edit with AI
+                    </button>
+                    <a
+                      href={imageUrl}
+                      download="component.png"
+                      style={{ ...BTN, textDecoration: 'none', color: '#7dd3fc' }}
+                    >
+                      ↓ Download
+                    </a>
+                  </>
                 )}
                 <button onClick={dismiss} style={BTN}>✕ Close</button>
               </div>

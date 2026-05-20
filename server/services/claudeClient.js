@@ -31,9 +31,10 @@ Rules:
 - Make it fully functional (real state, real handlers)
 - Make it visually beautiful and production-ready
 - Use the specified style system consistently
-- Never use placeholder text like "TODO" or "coming soon"`;
+- Never use placeholder text like "TODO" or "coming soon"
+- When given a screenshot or image, faithfully reproduce the UI shown in the image using the specified style system`;
 
-function buildMessages(prompt, styleSystem, theme, templateCode, history) {
+function buildMessages(prompt, styleSystem, theme, templateCode, history, screenshotImage) {
   const styleInstruction = STYLE_SYSTEM_INSTRUCTIONS[styleSystem] || STYLE_SYSTEM_INSTRUCTIONS.tailwind;
   const themeInstruction = theme === 'dark' ? 'Use a dark color scheme.' : 'Use a light color scheme.';
 
@@ -47,9 +48,21 @@ function buildMessages(prompt, styleSystem, theme, templateCode, history) {
     }
   }
 
-  let userContent = prompt;
-  if (templateCode) {
-    userContent = `Start from this template and modify it as needed:\n\`\`\`tsx\n${templateCode}\n\`\`\`\n\nRequest: ${prompt}`;
+  const textPrompt = templateCode
+    ? `Start from this template and modify it as needed:\n\`\`\`tsx\n${templateCode}\n\`\`\`\n\nRequest: ${prompt}`
+    : prompt;
+
+  let userContent;
+  if (screenshotImage) {
+    userContent = [
+      {
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/png', data: screenshotImage },
+      },
+      { type: 'text', text: textPrompt },
+    ];
+  } else {
+    userContent = textPrompt;
   }
 
   messages.push({ role: 'user', content: userContent });
@@ -57,8 +70,8 @@ function buildMessages(prompt, styleSystem, theme, templateCode, history) {
   return { systemWithStyle, messages };
 }
 
-async function streamComponent({ prompt, styleSystem, theme, templateCode, history, onChunk, onDone, onError }) {
-  const { systemWithStyle, messages } = buildMessages(prompt, styleSystem, theme, templateCode, history);
+async function streamComponent({ prompt, styleSystem, theme, templateCode, history, screenshotImage, onChunk, onDone, onError }) {
+  const { systemWithStyle, messages } = buildMessages(prompt, styleSystem, theme, templateCode, history, screenshotImage);
 
   try {
     const stream = client.messages.stream({

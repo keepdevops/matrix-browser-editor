@@ -34,12 +34,16 @@ const PromptRequestSchema = z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string(),
   })).default([]),
+  screenshotImage: z.string()
+    .regex(/^[A-Za-z0-9+/=]+$/, 'screenshotImage must be plain base64')
+    .optional(),
 });
 
 function validate(schema, data) {
   const result = schema.safeParse(data);
   if (!result.success) {
-    const message = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
+    const issues = result.error.issues ?? result.error.errors ?? [];
+    const message = issues.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
     throw new Error(`Validation failed: ${message}`);
   }
   return result.data;

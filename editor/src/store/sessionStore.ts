@@ -8,6 +8,7 @@ interface SessionState {
   connectorMode: 'none' | 'export' | 'analyze' | 'inject' | 'live';
   targetProjectPath: string;
   sidebarTab: 'templates' | 'style' | 'connector';
+  pendingScreenshot: string | null;
 
   setStyleSystem: (s: StyleSystem) => void;
   setTheme: (t: Theme) => void;
@@ -15,6 +16,7 @@ interface SessionState {
   setConnectorMode: (m: SessionState['connectorMode']) => void;
   setTargetProjectPath: (p: string) => void;
   setSidebarTab: (tab: SessionState['sidebarTab']) => void;
+  setPendingScreenshot: (url: string | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -24,6 +26,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   connectorMode: 'none',
   targetProjectPath: '',
   sidebarTab: 'templates',
+  pendingScreenshot: null,
 
   setStyleSystem: (styleSystem) => set({ styleSystem }),
   setTheme: (theme) => set({ theme }),
@@ -31,4 +34,5 @@ export const useSessionStore = create<SessionState>((set) => ({
   setConnectorMode: (connectorMode) => set({ connectorMode }),
   setTargetProjectPath: (targetProjectPath) => set({ targetProjectPath }),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
+  setPendingScreenshot: (pendingScreenshot) => set({ pendingScreenshot }),
 }));

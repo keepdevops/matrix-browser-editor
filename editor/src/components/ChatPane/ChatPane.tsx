@@ -1,4 +1,3 @@
-
 import { useAgentStore } from '../../store/agentStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { useAgentStream } from '../../hooks/useAgentStream';
@@ -8,11 +7,11 @@ import { StatusBadge } from '../shared/StatusBadge';
 
 export function ChatPane() {
   const { messages, isStreaming, streamBuffer, error, clearMessages } = useAgentStore();
-  const { activeTemplate } = useSessionStore();
+  const { activeTemplate, pendingScreenshot, setPendingScreenshot } = useSessionStore();
   const { send } = useAgentStream();
 
-  const handleSend = (prompt: string) => {
-    send({ prompt, templateCode: activeTemplate?.code });
+  const handleSend = (prompt: string, image?: string | null) => {
+    send({ prompt, templateCode: activeTemplate?.code, screenshotImage: image ?? undefined });
   };
 
   const status = isStreaming ? 'loading' : error ? 'error' : 'idle';
@@ -49,7 +48,13 @@ export function ChatPane() {
         error={error}
       />
 
-      <PromptInput onSend={handleSend} disabled={isStreaming} />
+      <PromptInput
+        onSend={handleSend}
+        disabled={isStreaming}
+        attachedImage={pendingScreenshot}
+        onImageAttach={setPendingScreenshot}
+        onClearImage={() => setPendingScreenshot(null)}
+      />
     </div>
   );
 }
