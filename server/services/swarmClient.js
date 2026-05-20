@@ -11,14 +11,15 @@ const SWARM_STREAM_PATH = '/api/architect/stream';
  * then extract the first TSX/TypeScript code block from its markdown.
  */
 function extractComponentFromMarkdown(text) {
-  // Grab the first ```typescript or ```tsx code block that looks like a React component
-  const codeBlockRe = /```(?:tsx?|typescript)[^\n]*\n([\s\S]*?)```/g;
+  // Match tsx, ts, jsx, js, typescript, javascript code blocks
+  const codeBlockRe = /```(?:tsx?|jsx?|typescript|javascript)[^\n]*\n([\s\S]*?)```/g;
   let best = null;
   let bestLen = 0;
   let match;
   while ((match = codeBlockRe.exec(text)) !== null) {
     const block = match[1].trim();
-    if (block.length > bestLen) {
+    // Must look like a React component (has JSX or React import)
+    if (block.length > bestLen && (block.includes('React') || block.includes('return (') || block.includes('return('))) {
       best = block;
       bestLen = block.length;
     }
@@ -82,6 +83,7 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
       // Track per-agent text; stream the frontend agent's tokens to the client
       const agentText = {};
       let selectedAgents = [];
+      let settled = false;
 
       res.on('data', (chunk) => {
         buf += chunk.toString();
@@ -113,11 +115,13 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
             // Only stream the frontend agent's tokens for display
             if (agent === 'frontend' || agent === 'unknown') onChunk(delta);
           } else if (eventName === 'done') {
-            const frontendText = agentText['frontend'] || agentText['unknown'] || Object.values(agentText).join('\n');
-            const component = extractComponentFromMarkdown(frontendText);
+            if (settled) { resolve(); return; }
+            settled = true;
+            const allText = Object.values(agentText).join('\n');
+            const component = extractComponentFromMarkdown(allText);
             if (!component) {
-              console.warn('[swarmClient] no TSX code block found in swarm response, triggering fallback');
-              onError('swarm response has no extractable TSX component');
+              console.warn('[swarmClient] no React code block found in swarm response, triggering fallback');
+              onError('swarm response has no extractable React component');
               resolve();
               return;
             }
@@ -133,14 +137,15 @@ function streamComponent({ prompt, styleSystem, theme, templateCode, history, on
       });
 
       res.on('end', () => {
-        if (Object.keys(agentText).length > 0) {
-          const frontendText = agentText['frontend'] || agentText['unknown'] || Object.values(agentText).join('\n');
-          const component = extractComponentFromMarkdown(frontendText);
+        if (!settled && Object.keys(agentText).length > 0) {
+          settled = true;
+          const allText = Object.values(agentText).join('\n');
+          const component = extractComponentFromMarkdown(allText);
           if (component) {
             onDone(JSON.stringify(component));
           } else {
-            console.warn('[swarmClient] end: no TSX block, triggering fallback');
-            onError('swarm response has no extractable TSX component');
+            console.warn('[swarmClient] end: no React block, triggering fallback');
+            onError('swarm response has no extractable React component');
           }
         }
         resolve();

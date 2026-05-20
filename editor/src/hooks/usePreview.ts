@@ -28,18 +28,7 @@ const CDN: Record<string, string[]> = {
   ],
 };
 
-function stripTypeAnnotations(code: string): string {
-  return code
-    .replace(/:\s*React\.FC[^=]*/g, '')
-    .replace(/:\s*React\.CSSProperties/g, '')
-    .replace(/:\s*string(\s*[,)=\n])/g, '$1')
-    .replace(/:\s*number(\s*[,)=\n])/g, '$1')
-    .replace(/:\s*boolean(\s*[,)=\n])/g, '$1')
-    .replace(/interface\s+\w+\s*\{[^}]*\}/g, '')
-    .replace(/type\s+\w+\s*=\s*[^;]+;/g, '')
-    .replace(/\w<[A-Z][a-zA-Z]*>/g, (m) => m[0]) // strip TS generics like Array<T> but not JSX <Component>
-    .replace(/import\s+type\s+[^;]+;/g, '');
-}
+// No manual stripping needed — Babel standalone handles TS via data-presets="react,typescript"
 
 function resolveCdnTags(code: string, styleSystem: string): string {
   const tags = [...(CDN[styleSystem] || CDN.tailwind)];
@@ -54,16 +43,19 @@ function buildSrcdoc(code: string, styleSystem: string, theme: string): string {
   const fg = theme === 'dark' ? '#f1f5f9' : '#0f172a';
   const darkClass = theme === 'dark' ? 'dark' : '';
 
-  // Extract the first exported function/const name to use as root component
-  const nameMatch = code.match(/export\s+(?:default\s+)?function\s+(\w+)|export\s+(?:const|let)\s+(\w+)/);
-  const componentName = nameMatch ? (nameMatch[1] || nameMatch[2]) : null;
+  // Extract the exported component name
+  const nameMatch = code.match(/export\s+default\s+function\s+(\w+)/) ||
+    code.match(/export\s+(?:function|class)\s+(\w+)/) ||
+    code.match(/export\s+(?:const|let)\s+(\w+)/) ||
+    code.match(/export\s+default\s+(\w+)/);
+  const componentName = nameMatch ? nameMatch[1] : null;
 
   const rechartsMatch = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]recharts['"]/);
   const chartjs2Match = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]react-chartjs-2['"]/);
 
-  // Strip TS-only syntax for Babel standalone (which doesn't handle TS natively in text/babel)
-  const strippedCode = stripTypeAnnotations(code)
-    .replace(/^import\s+.*from\s+['"]react['"];?/m, '')
+  // Strip CDN-provided imports and expose the component on window for rendering
+  const strippedCode = code
+    .replace(/^import\s+.*from\s+['"]react['"];?/mg, '')
     .replace(/^import\s+.*from\s+['"]recharts['"];?/gm, '')
     .replace(/^import\s+.*from\s+['"]react-chartjs-2['"];?/gm, '')
     .replace(/^import\s+.*from\s+['"]chart\.js[^'"]*['"];?/gm, '')
@@ -88,11 +80,12 @@ function buildSrcdoc(code: string, styleSystem: string, theme: string): string {
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   ${cdnTags}
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>Babel.registerPreset('tsx',{presets:[[Babel.availablePresets['typescript'],{allExtensions:true,isTSX:true}],Babel.availablePresets['react']]});</script>
   <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}</style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel">
+  <script type="text/babel" data-presets="tsx">
     const { useState, useEffect, useRef, useCallback, useMemo } = React;
     ${umdShims}
     ${strippedCode}

@@ -59,7 +59,9 @@ export function useAgentStream() {
               fullContent += event.content;
               appendStreamDelta(event.content);
             } else if (event.type === 'done') {
-              finalizeStream(fullContent || event.content);
+              // event.content holds the canonical JSON from the server;
+              // fullContent is the raw markdown stream used only for display
+              finalizeStream(event.content || fullContent);
               const component = useAgentStore.getState().lastComponent;
               if (component) {
                 setCode(component.code);
