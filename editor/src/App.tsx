@@ -20,16 +20,23 @@ const TAB_BTN = (active: boolean): React.CSSProperties => ({
   whiteSpace: 'nowrap' as const,
 });
 
+const COLLAPSE_BTN: React.CSSProperties = {
+  padding: '3px 8px', borderRadius: 4, background: 'transparent',
+  border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 11,
+};
+
 export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const { rightTab, setRightTab } = useSessionStore();
 
   const sidebarWidth = sidebarCollapsed ? 44 : 200;
+  const chatWidth = chatCollapsed ? 44 : 320;
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: `${sidebarWidth}px 320px 1fr`,
+      gridTemplateColumns: `${sidebarWidth}px ${chatWidth}px 1fr`,
       gridTemplateRows: '100vh',
       height: '100vh',
       overflow: 'hidden',
@@ -41,7 +48,14 @@ export default function App() {
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(c => !c)} />
 
       <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e293b' }}>
-        <ChatPane />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: chatCollapsed ? 'center' : 'flex-end', padding: '4px 6px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
+          <button onClick={() => setChatCollapsed(c => !c)} style={COLLAPSE_BTN} title={chatCollapsed ? 'Show chat' : 'Hide chat'}>
+            {chatCollapsed ? '›' : '‹ Hide'}
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden', display: chatCollapsed ? 'none' : 'flex', flexDirection: 'column' }}>
+          <ChatPane />
+        </div>
       </div>
 
       {/* Right panel — tabbed Preview / Code */}

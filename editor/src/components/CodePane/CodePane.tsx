@@ -41,11 +41,11 @@ async function formatCode(code: string, lang: string): Promise<string> {
 }
 
 export function CodePane() {
-  const { code, previousCode, isDiffMode, language, componentName, historyIndex, history, toggleDiffMode, setCode, undo, redo } = useEditorStore();
+  const { code, previousCode, isDiffMode, language, componentName, historyIndex, history, toggleDiffMode, setCode, setComponentName, setLanguage, undo, redo } = useEditorStore();
   const { targetProjectPath, addRecentPath } = useSessionStore();
   const { save: saveToLibrary } = useLibraryStore();
   const { lastComponent } = useAgentStore();
-  const { updateActiveCode } = useFileTabStore();
+  const { updateActiveCode, openTab, setActiveTab } = useFileTabStore();
   const { status, message, exportComponent, injectIntoFile, reset } = useConnector();
   const { send: sendRefactor } = useAgentStream();
   const { loading: shareLoading, shareId, share, dismiss: dismissShare } = useShare();
@@ -105,6 +105,14 @@ export function CodePane() {
     catch { setTimeout(reset, 4000); }
   };
 
+  const handleNewFile = () => {
+    const id = openTab({ name: 'Untitled', code: '', language: 'tsx' });
+    setActiveTab(id);
+    setCode('');
+    setComponentName('Untitled');
+    setLanguage('tsx');
+  };
+
   const statusColor = status === 'success' ? '#22c55e' : status === 'error' ? '#ef4444' : '#94a3b8';
 
   return (
@@ -120,6 +128,7 @@ export function CodePane() {
           </span>
         )}
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+          <button onClick={handleNewFile} title="New blank file" style={BTN}>+ New</button>
           <button onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)" style={{ ...BTN, opacity: historyIndex <= 0 ? 0.35 : 1, padding: '3px 7px' }}>↩</button>
           <button onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Shift+Z)" style={{ ...BTN, opacity: historyIndex >= history.length - 1 ? 0.35 : 1, padding: '3px 7px' }}>↪</button>
           <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
