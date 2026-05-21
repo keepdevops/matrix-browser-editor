@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import { useEditorStore } from '../../store/editorStore';
 import { useConnector } from '../../hooks/useConnector';
 import { useSessionStore } from '../../store/sessionStore';
+import { ComponentTabs } from './ComponentTabs';
+import { parseComponents, patchComponent } from '../../lib/parseComponents';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -28,6 +30,23 @@ export function CodePane() {
 
   const [showInject, setShowInject] = useState(false);
   const [injectPath, setInjectPath] = useState('');
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
+
+  const components = useMemo(() => parseComponents(code), [code]);
+
+  // The component def for the active tab (null = full code view)
+  const activeDef = activeComponent ? components.find(c => c.name === activeComponent) ?? null : null;
+  const displayCode = activeDef ? activeDef.code : code;
+
+  const handleEditorChange = (val: string | undefined) => {
+    if (val === undefined) return;
+    if (activeDef) {
+      // Patch just this component's slice back into the full code
+      setCode(patchComponent(code, activeDef, val));
+    } else {
+      setCode(val);
+    }
+  };
 
   const monacoLang = language === 'tsx' || language === 'jsx' ? 'typescript' : 'javascript';
 
@@ -132,6 +151,9 @@ export function CodePane() {
         </div>
       )}
 
+      {/* Component tabs */}
+      <ComponentTabs components={components} active={activeComponent} onChange={setActiveComponent} />
+
       {/* Editor */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {isDiffMode ? (
@@ -148,8 +170,8 @@ export function CodePane() {
             height="100%"
             language={monacoLang}
             theme="vs-dark"
-            value={code}
-            onChange={(val) => val !== undefined && setCode(val)}
+            value={displayCode}
+            onChange={handleEditorChange}
             options={{
               minimap: { enabled: false },
               fontSize: 13,
