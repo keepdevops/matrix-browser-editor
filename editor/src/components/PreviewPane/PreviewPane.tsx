@@ -14,11 +14,18 @@ const BTN: React.CSSProperties = {
   fontSize: 12,
 };
 
+const VIEWPORTS = [
+  { label: '📱', title: 'Mobile (375px)', width: 375 },
+  { label: '⊞', title: 'Tablet (768px)', width: 768 },
+  { label: '⊡', title: 'Desktop (full)', width: 0 },
+] as const;
+
 export function PreviewPane() {
   const { iframeRef } = usePreview();
   const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { imageUrl, isCapturing, error, capture, dismiss } = useScreenshot();
+  const [viewportWidth, setViewportWidth] = React.useState(0); // 0 = full
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
@@ -35,6 +42,24 @@ export function PreviewPane() {
           {isStreaming && (
             <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 500 }}>● rendering…</span>
           )}
+          <div style={{ display: 'flex', gap: 2, background: '#1e293b', borderRadius: 6, padding: 2 }}>
+            {VIEWPORTS.map(vp => (
+              <button
+                key={vp.width}
+                title={vp.title}
+                onClick={() => setViewportWidth(vp.width)}
+                style={{
+                  ...BTN,
+                  background: viewportWidth === vp.width ? '#334155' : 'transparent',
+                  border: 'none',
+                  padding: '2px 8px',
+                  fontSize: 13,
+                }}
+              >
+                {vp.label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={capture}
             disabled={isCapturing}
@@ -51,16 +76,19 @@ export function PreviewPane() {
         </div>
       </div>
 
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
         <iframe
           ref={iframeRef}
           title="Component Preview"
           sandbox="allow-scripts"
           style={{
-            width: '100%',
+            width: viewportWidth > 0 ? viewportWidth : '100%',
             height: '100%',
-            border: 'none',
+            minHeight: '100%',
+            border: viewportWidth > 0 ? '1px solid #334155' : 'none',
+            borderTop: 'none',
             background: theme === 'dark' ? '#0f172a' : '#f8fafc',
+            flexShrink: 0,
           }}
         />
       </div>
