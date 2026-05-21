@@ -96,33 +96,37 @@ function extractJsonSegments(text: string): string[] {
   return segments;
 }
 
-// Extract content from markdown fenced code blocks (```json ... ``` or ``` ... ```)
-function extractFencedBlocks(text: string): string[] {
-  const blocks: string[] = [];
-  const re = /```(?:json|tsx?|jsx?|typescript|javascript)?\s*\n([\s\S]*?)```/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) blocks.push(m[1].trim());
-  return blocks;
-}
-
 // Swarm concatenates one JSON blob per agent — pick the one with the most actual code.
 function parseComponent(text: string): ParsedComponent | null {
   const candidates: ParsedComponent[] = [];
 
-  // 1. Try fenced blocks first (Claude sometimes wraps JSON in ```json```)
-  for (const block of extractFencedBlocks(text)) {
-    const result = tryParseJson(block);
+  // Strategy 1: direct JSON.parse (server sends clean JSON)
+  const direct = tryParseJson(text.trim());
+  if (direct) candidates.push(direct);
+
+  // Strategy 2: greedy {…} extraction (handles leading/trailing text or markdown)
+  const greedyMatch = text.match(/\{[\s\S]*\}/);
+  if (greedyMatch) {
+    const result = tryParseJson(greedyMatch[0]);
     if (result) candidates.push(result);
   }
 
-  // 2. Fall back to bare JSON object extraction
+  // Strategy 3: fenced JSON/code blocks (``` json {...} ```)
+  const fenceRe = /```(?:json|tsx?|jsx?|typescript|javascript)?\s*\n([\s\S]*?)```/g;
+  let fm: RegExpExecArray | null;
+  while ((fm = fenceRe.exec(text)) !== null) {
+    const result = tryParseJson(fm[1].trim());
+    if (result) candidates.push(result);
+  }
+
+  // Strategy 4: walker-based multi-object extraction (swarm multi-agent blobs)
   for (const seg of extractJsonSegments(text)) {
     const result = tryParseJson(seg);
     if (result) candidates.push(result);
   }
 
   if (candidates.length === 0) {
-    console.error('[agentStore] parseComponent failed. Text preview:', text.slice(0, 300));
+    console.error('[agentStore] parseComponent failed. Text preview:', text.slice(0, 400));
     return null;
   }
   return candidates.reduce((best, c) => c.code.length > best.code.length ? c : best);

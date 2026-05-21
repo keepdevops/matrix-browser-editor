@@ -32,6 +32,7 @@ Rules:
 - Make it visually beautiful and production-ready
 - Use the specified style system consistently
 - Never use placeholder text like "TODO" or "coming soon"
+- CRITICAL: The exported default component MUST render with zero props. Never require external props on the default export. Use hardcoded sample data inside the component or wrap sub-components with demo data. If you define a props interface, the default export must provide all values internally
 - When given a screenshot or image, faithfully reproduce the UI shown in the image using the specified style system`;
 
 function buildMessages(prompt, styleSystem, theme, templateCode, history, screenshotImage) {

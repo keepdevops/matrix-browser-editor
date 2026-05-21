@@ -28,18 +28,7 @@ const CDN_MAP = {
   ],
 };
 
-function stripTypeAnnotations(code) {
-  return code
-    .replace(/:\s*React\.FC[^=]*/g, '')
-    .replace(/:\s*React\.CSSProperties/g, '')
-    .replace(/:\s*string(\s*[,)=\n])/g, '$1')
-    .replace(/:\s*number(\s*[,)=\n])/g, '$1')
-    .replace(/:\s*boolean(\s*[,)=\n])/g, '$1')
-    .replace(/interface\s+\w+\s*\{[^}]*\}/g, '')
-    .replace(/type\s+\w+\s*=\s*[^;]+;/g, '')
-    .replace(/\w<[A-Z][a-zA-Z]*>/g, (m) => m[0]) // strip TS generics like Array<T> but not JSX <Component>
-    .replace(/import\s+type\s+[^;]+;/g, '');
-}
+// TypeScript stripping handled by Babel tsx preset — no manual stripping needed
 
 function resolveCdnTags(code, styleSystem) {
   const tags = [...(CDN_MAP[styleSystem] || CDN_MAP.tailwind)];
@@ -54,29 +43,27 @@ function buildHtml(code, styleSystem, theme) {
   const fg = theme === 'dark' ? '#f1f5f9' : '#0f172a';
   const darkClass = theme === 'dark' ? 'dark' : '';
 
-  const nameMatch = code.match(/export\s+(?:default\s+)?function\s+(\w+)|export\s+(?:const|let)\s+(\w+)/);
-  const componentName = nameMatch ? (nameMatch[1] || nameMatch[2]) : null;
-
-  // Extract named imports from known UMD globals before stripping
   const rechartsMatch = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]recharts['"]/);
   const chartjs2Match = code.match(/import\s+\{([^}]+)\}\s+from\s+['"]react-chartjs-2['"]/);
 
-  const strippedCode = stripTypeAnnotations(code)
-    .replace(/^import\s+.*from\s+['"]react['"];?/m, '')
+  const strippedCode = code
+    .replace(/^import\s+.*from\s+['"]react['"];?/mg, '')
     .replace(/^import\s+.*from\s+['"]recharts['"];?/gm, '')
     .replace(/^import\s+.*from\s+['"]react-chartjs-2['"];?/gm, '')
     .replace(/^import\s+.*from\s+['"]chart\.js[^'"]*['"];?/gm, '')
     .replace(/^export\s+default\s+/m, 'window.__Component = ')
-    .replace(/^export\s+(?:function|const|class)\s+(\w+)/m, (_, n) => `window.__Component = function ${n}`);
+    .replace(/^export\s+(?:function|const|class)\s+(\w+)/m, (_, n) => `window.__Component = window.${n} = function ${n}`);
 
   const umdShims = [
     rechartsMatch ? `const { ${rechartsMatch[1].trim()} } = window.Recharts || {};` : '',
     chartjs2Match ? `const { ${chartjs2Match[1].trim()} } = window.ReactChartjs2 || {};` : '',
   ].filter(Boolean).join('\n    ');
 
-  const renderCall = componentName
-    ? `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component || ${componentName}, null));`
-    : `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component, null));`;
+  const demoProps = `{title:'Demo Title',name:'Demo',label:'Demo',description:'A sample component.',price:'$99',plan:'Pro',buttonText:'Get Started',features:['Feature 1','Feature 2','Feature 3'],items:[{id:1,label:'Item 1'},{id:2,label:'Item 2'}],data:[{x:1,y:10},{x:2,y:20}],children:null,value:'',count:0,isActive:false,isHighlighted:true,isOpen:false,isLoading:false,onClick:function(){},onChange:function(){},onSubmit:function(){},onSubscribe:function(){},onClose:function(){},subtitle:'Subtitle',heading:'Heading',src:'https://picsum.photos/400/300',alt:'Demo',user:{name:'Jane Doe',email:'jane@example.com'}}`;
+
+  const renderCall = `
+class ErrorBoundary extends React.Component{constructor(p){super(p);this.state={err:null};}static getDerivedStateFromError(e){return{err:e};}render(){if(this.state.err){return React.createElement('div',{style:{padding:'16px',color:'#f87171',fontFamily:'monospace',fontSize:13,background:'#1a0a0a',borderRadius:8}},'Preview error: '+String(this.state.err.message||this.state.err));}return this.props.children;}}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ErrorBoundary,null,React.createElement(window.__Component,${demoProps})));`;
 
   return `<!DOCTYPE html>
 <html lang="en" class="${darkClass}">
@@ -87,11 +74,12 @@ function buildHtml(code, styleSystem, theme) {
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   ${cdnTags}
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>Babel.registerPreset('tsx',{presets:[[Babel.availablePresets['typescript'],{allExtensions:true,isTSX:true}],Babel.availablePresets['react']]});</script>
   <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}#root{width:100%}</style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel">
+  <script type="text/babel" data-presets="tsx">
     const { useState, useEffect, useRef, useCallback, useMemo } = React;
     ${umdShims}
     ${strippedCode}
@@ -101,29 +89,37 @@ function buildHtml(code, styleSystem, theme) {
 </html>`;
 }
 
-async function screenshotComponent({ code, styleSystem = 'tailwind', theme = 'light', width = 800, height = 600 }) {
-  const html = buildHtml(code, styleSystem, theme);
-  const browser = await chromium.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+// Reuse a single browser instance across requests to avoid launch contention
+let _browser = null;
+async function getBrowser() {
+  if (_browser && _browser.isConnected()) return _browser;
+  _browser = await chromium.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
   });
+  _browser.on('disconnected', () => { _browser = null; });
+  return _browser;
+}
+
+async function screenshotComponent({ code, styleSystem = 'tailwind', theme = 'light', width = 800, height = 600 }) {
+  console.log('[screenshotter] starting capture...');
+  const html = buildHtml(code, styleSystem, theme);
+  const browser = await getBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.setViewportSize({ width, height });
-    await page.setContent(html, { waitUntil: 'load', timeout: 25000 });
-    // wait for all CDN scripts to load and Babel to transform
+    await page.setContent(html, { waitUntil: 'commit', timeout: 30000 });
     await page.waitForFunction(
       () => typeof window.React !== 'undefined' && typeof window.ReactDOM !== 'undefined' && typeof window.Babel !== 'undefined',
-      { timeout: 15000 }
-    ).catch(() => {});
-    // wait for React to mount into #root
+      { timeout: 20000 }
+    ).catch(() => { console.warn('[screenshotter] CDN scripts timed out'); });
     await page.waitForFunction(() => document.getElementById('root')?.children.length > 0, { timeout: 10000 })
       .catch(() => {});
-    // settle time for chart libraries using ResizeObserver / async layout
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1000);
     const buffer = await page.screenshot({ type: 'png', fullPage: false });
+    console.log('[screenshotter] capture done, size:', buffer.length);
     return buffer.toString('base64');
   } finally {
-    await browser.close();
+    await page.close();
   }
 }
 

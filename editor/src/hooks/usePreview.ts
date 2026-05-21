@@ -67,7 +67,41 @@ function buildSrcdoc(code: string, styleSystem: string, theme: string): string {
     chartjs2Match ? `const { ${chartjs2Match[1].trim()} } = window.ReactChartjs2 || {};` : '',
   ].filter(Boolean).join('\n    ');
 
-  const renderCall = `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component, null));`;
+  const renderCall = `
+class ErrorBoundary extends React.Component {
+  constructor(p){super(p);this.state={err:null};}
+  static getDerivedStateFromError(e){return {err:e};}
+  render(){
+    if(this.state.err){
+      return React.createElement('div',{style:{padding:'16px',color:'#f87171',fontFamily:'monospace',fontSize:13,background:'#1a0a0a',borderRadius:8,margin:8}},
+        React.createElement('b',null,'Preview error: '),
+        String(this.state.err.message||this.state.err)
+      );
+    }
+    return this.props.children;
+  }
+}
+// Common demo props to satisfy typical generated components that require props
+const __demoProps = {
+  title:'Demo Title', name:'Demo', label:'Demo', description:'A sample component.',
+  price:'$99', plan:'Pro', buttonText:'Get Started', ctaText:'Learn More',
+  features:['Fast performance','Easy to use','Fully responsive'],
+  items:[{id:1,label:'Item 1'},{id:2,label:'Item 2'},{id:3,label:'Item 3'}],
+  data:[{x:1,y:10},{x:2,y:20},{x:3,y:15}],
+  children:null, value:'', count:0, total:0, isActive:false, isHighlighted:true,
+  isOpen:false, isLoading:false, disabled:false, checked:false,
+  onClick:function(){}, onChange:function(){}, onSubmit:function(){},
+  onSubscribe:function(){}, onClose:function(){}, onSelect:function(){},
+  subtitle:'Subtitle text', heading:'Heading', text:'Sample text',
+  src:'https://picsum.photos/400/300', alt:'Demo image', href:'#',
+  color:'#6366f1', size:'md', variant:'primary', type:'button',
+  placeholder:'Enter text...', message:'Hello, world!',
+  user:{name:'Jane Doe', email:'jane@example.com', avatar:'https://i.pravatar.cc/40'},
+  stats:[{label:'Users',value:'1.2k'},{label:'Revenue',value:'$4.5k'},{label:'Growth',value:'+12%'}],
+};
+ReactDOM.createRoot(document.getElementById('root')).render(
+  React.createElement(ErrorBoundary,null,React.createElement(window.__Component,__demoProps))
+);`;
 
   return `<!DOCTYPE html>
 <html lang="en" class="${darkClass}">

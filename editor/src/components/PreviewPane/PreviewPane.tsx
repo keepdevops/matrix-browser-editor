@@ -37,7 +37,7 @@ export function PreviewPane() {
           )}
           <button
             onClick={capture}
-            disabled={isCapturing || isStreaming}
+            disabled={isCapturing}
             style={{ ...BTN, color: isCapturing ? '#475569' : '#7dd3fc', borderColor: isCapturing ? '#1e293b' : '#1d4ed8' }}
           >
             {isCapturing ? '⏳ capturing…' : '📸 Screenshot'}

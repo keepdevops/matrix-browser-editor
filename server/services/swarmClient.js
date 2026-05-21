@@ -181,7 +181,7 @@ function buildPrompt(prompt, styleSystem, theme, templateCode) {
   const style = styleMap[styleSystem] || 'Tailwind CSS';
   const themeNote = theme === 'dark' ? 'dark color scheme' : 'light color scheme';
 
-  let full = `Generate a React component using ${style} with a ${themeNote}.\n\n`;
+  let full = `Generate a React component using ${style} with a ${themeNote}. IMPORTANT: The exported default component must render with zero props — use hardcoded demo data or internal state, never require external props on the default export.\n\n`;
 
   if (templateCode) {
     full += `Start from this template:\n\`\`\`tsx\n${templateCode}\n\`\`\`\n\n`;
