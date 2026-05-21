@@ -19,6 +19,10 @@ app.use('/api/preview', previewRouter);
 app.use('/api/connector', connectorRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/status', (_req, res) => res.json({
+  swarmEnabled: Boolean(process.env.SWARM_URL),
+  swarmUrl: process.env.SWARM_URL || null,
+}));
 
 app.use((err, _req, res, _next) => {
   console.error('[server] unhandled error:', err.message);

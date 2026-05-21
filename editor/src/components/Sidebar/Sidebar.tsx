@@ -2,11 +2,13 @@ import { useSessionStore } from '../../store/sessionStore';
 import { TemplateLibrary } from './TemplateLibrary';
 import { StyleSystemPicker } from './StyleSystemPicker';
 import { ConnectorPanel } from './ConnectorPanel';
+import { LibraryPanel } from './LibraryPanel';
 
 const TABS = [
   { id: 'templates' as const, label: 'Templates', icon: '⚡' },
   { id: 'style' as const, label: 'Style', icon: '🎨' },
   { id: 'connector' as const, label: 'Connector', icon: '🔌' },
+  { id: 'library' as const, label: 'Library', icon: '📦' },
 ] as const;
 
 export function Sidebar() {
@@ -51,6 +53,7 @@ export function Sidebar() {
         {sidebarTab === 'templates' && <TemplateLibrary />}
         {sidebarTab === 'style' && <StyleSystemPicker />}
         {sidebarTab === 'connector' && <ConnectorPanel />}
+        {sidebarTab === 'library' && <LibraryPanel />}
       </div>
     </div>
   );

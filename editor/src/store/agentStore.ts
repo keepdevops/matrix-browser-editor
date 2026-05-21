@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { AgentMessage, ParsedComponent } from '../lib/schemas';
 
 interface AgentState {
@@ -132,7 +133,7 @@ function parseComponent(text: string): ParsedComponent | null {
   return candidates.reduce((best, c) => c.code.length > best.code.length ? c : best);
 }
 
-export const useAgentStore = create<AgentState>((set, get) => ({
+export const useAgentStore = create<AgentState>()(persist((set, get) => ({
   messages: [],
   isStreaming: false,
   streamBuffer: '',
@@ -180,4 +181,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   clearMessages: () => set({ messages: [], lastComponent: null, error: null }),
+}), {
+  name: 'agent-store',
+  partialize: (s) => ({ messages: s.messages, lastComponent: s.lastComponent }),
 }));
