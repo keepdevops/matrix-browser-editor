@@ -96,14 +96,35 @@ function extractJsonSegments(text: string): string[] {
   return segments;
 }
 
+// Extract content from markdown fenced code blocks (```json ... ``` or ``` ... ```)
+function extractFencedBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  const re = /```(?:json|tsx?|jsx?|typescript|javascript)?\s*\n([\s\S]*?)```/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) blocks.push(m[1].trim());
+  return blocks;
+}
+
 // Swarm concatenates one JSON blob per agent — pick the one with the most actual code.
 function parseComponent(text: string): ParsedComponent | null {
   const candidates: ParsedComponent[] = [];
+
+  // 1. Try fenced blocks first (Claude sometimes wraps JSON in ```json```)
+  for (const block of extractFencedBlocks(text)) {
+    const result = tryParseJson(block);
+    if (result) candidates.push(result);
+  }
+
+  // 2. Fall back to bare JSON object extraction
   for (const seg of extractJsonSegments(text)) {
     const result = tryParseJson(seg);
     if (result) candidates.push(result);
   }
-  if (candidates.length === 0) return null;
+
+  if (candidates.length === 0) {
+    console.error('[agentStore] parseComponent failed. Text preview:', text.slice(0, 300));
+    return null;
+  }
   return candidates.reduce((best, c) => c.code.length > best.code.length ? c : best);
 }
 
