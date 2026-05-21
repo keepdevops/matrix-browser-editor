@@ -9,6 +9,8 @@ interface PromptInputProps {
   attachedImage?: string | null;
   onImageAttach?: (dataUrl: string) => void;
   onClearImage?: () => void;
+  initialValue?: string | null;
+  onInitialValueConsumed?: () => void;
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -20,7 +22,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, onClearImage }: PromptInputProps) {
+export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, onClearImage, initialValue, onInitialValueConsumed }: PromptInputProps) {
   const [value, setValue] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -30,6 +32,14 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
   useEffect(() => {
     if (attachedImage) textareaRef.current?.focus();
   }, [attachedImage]);
+
+  useEffect(() => {
+    if (initialValue) {
+      setValue(initialValue);
+      textareaRef.current?.focus();
+      onInitialValueConsumed?.();
+    }
+  }, [initialValue, onInitialValueConsumed]);
 
   // Global paste listener: catches Ctrl+V even when textarea isn't focused
   useEffect(() => {

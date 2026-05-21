@@ -1,0 +1,103 @@
+import { useTokenStore, TOKEN_DEFAULTS, applyTokens, type TokenValues } from '../../store/tokenStore';
+import { useEditorStore } from '../../store/editorStore';
+
+const COLORS: { key: keyof TokenValues; label: string }[] = [
+  { key: 'color-primary', label: 'Primary' },
+  { key: 'color-secondary', label: 'Secondary' },
+  { key: 'color-background', label: 'Background' },
+  { key: 'color-surface', label: 'Surface' },
+  { key: 'color-text', label: 'Text' },
+  { key: 'color-border', label: 'Border' },
+];
+
+const SPACING_OPTIONS = ['2px', '4px', '6px', '8px', '12px'];
+const RADIUS_OPTIONS = ['0px', '4px', '8px', '12px', '9999px'];
+const FONT_OPTIONS = ['13px', '14px', '16px', '18px', '20px'];
+
+function OptionRow({ label, value, options, onChange }: {
+  label: string; value: string; options: string[]; onChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {options.map(opt => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            style={{
+              padding: '3px 8px',
+              borderRadius: 5,
+              background: value === opt ? '#4f46e5' : '#1e293b',
+              border: `1px solid ${value === opt ? '#6366f1' : '#334155'}`,
+              color: value === opt ? '#fff' : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TokensPanel() {
+  const { tokens, setToken, resetTokens } = useTokenStore();
+  const { code, setCode } = useEditorStore();
+
+  const handleChange = (key: keyof TokenValues, value: string) => {
+    setToken(key, value);
+    if (code.trim()) setCode(applyTokens(code, { ...tokens, [key]: value }));
+  };
+
+  const handleReset = () => {
+    resetTokens();
+    if (code.trim()) setCode(applyTokens(code, TOKEN_DEFAULTS));
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Design Tokens</span>
+        <button onClick={handleReset} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 11 }}>Reset</button>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Colors</div>
+        {COLORS.map(({ key, label }) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+            <label style={{ fontSize: 12, color: '#94a3b8' }}>{label}</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 5, background: tokens[key], border: '1px solid #334155', overflow: 'hidden', position: 'relative' }}>
+                <input
+                  type="color"
+                  value={tokens[key]}
+                  onChange={e => handleChange(key, e.target.value)}
+                  style={{ position: 'absolute', inset: -4, width: 'calc(100% + 8px)', height: 'calc(100% + 8px)', opacity: 0, cursor: 'pointer' }}
+                />
+              </div>
+              <input
+                type="text"
+                value={tokens[key]}
+                onChange={e => handleChange(key, e.target.value)}
+                style={{ width: 68, background: '#1e293b', border: '1px solid #334155', borderRadius: 5, padding: '2px 6px', color: '#f1f5f9', fontSize: 11, fontFamily: 'monospace' }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <OptionRow label="Spacing unit" value={tokens['spacing-unit']} options={SPACING_OPTIONS} onChange={v => handleChange('spacing-unit', v)} />
+      <OptionRow label="Border radius" value={tokens['border-radius']} options={RADIUS_OPTIONS} onChange={v => handleChange('border-radius', v)} />
+      <OptionRow label="Font size base" value={tokens['font-size-base']} options={FONT_OPTIONS} onChange={v => handleChange('font-size-base', v)} />
+
+      <div style={{ marginTop: 8, padding: '8px 10px', background: '#1e293b', borderRadius: 6, border: '1px solid #334155' }}>
+        <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.5 }}>
+          Changes inject <code style={{ color: '#a5b4fc' }}>:root</code> CSS variables into the active component. Use <code style={{ color: '#a5b4fc' }}>var(--color-primary)</code> in your code.
+        </p>
+      </div>
+    </div>
+  );
+}

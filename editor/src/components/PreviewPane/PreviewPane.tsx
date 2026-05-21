@@ -3,6 +3,9 @@ import { usePreview } from '../../hooks/usePreview';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useSessionStore } from '../../store/sessionStore';
 import { useAgentStore } from '../../store/agentStore';
+import { useEditorStore } from '../../store/editorStore';
+import { useAudit } from '../../hooks/useAudit';
+import { AuditPanel } from './AuditPanel';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -24,7 +27,9 @@ export function PreviewPane() {
   const { iframeRef } = usePreview();
   const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
-  const { imageUrl, isCapturing, error, capture, dismiss } = useScreenshot();
+  const { code } = useEditorStore();
+  const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
+  const { issues, loading: auditLoading, error: auditError, ran: auditRan, audit, clear: clearAudit } = useAudit();
   const [viewportWidth, setViewportWidth] = React.useState(0); // 0 = full
 
   return (
@@ -61,6 +66,13 @@ export function PreviewPane() {
             ))}
           </div>
           <button
+            onClick={() => audit(code)}
+            disabled={auditLoading || !code}
+            style={{ ...BTN, color: auditLoading ? '#475569' : '#86efac', borderColor: auditLoading ? '#1e293b' : '#166534', opacity: !code ? 0.4 : 1 }}
+          >
+            {auditLoading ? '⏳ auditing…' : '🔍 Audit'}
+          </button>
+          <button
             onClick={capture}
             disabled={isCapturing}
             style={{ ...BTN, color: isCapturing ? '#475569' : '#7dd3fc', borderColor: isCapturing ? '#1e293b' : '#1d4ed8' }}
@@ -75,6 +87,10 @@ export function PreviewPane() {
           </button>
         </div>
       </div>
+
+      {auditRan && (
+        <AuditPanel issues={issues} error={auditError} onClear={clearAudit} />
+      )}
 
       <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
         <iframe
@@ -93,7 +109,7 @@ export function PreviewPane() {
         />
       </div>
 
-      {(imageUrl || error) && (
+      {(imageUrl || screenshotError) && (
         <div
           onClick={dismiss}
           style={{
@@ -156,9 +172,9 @@ export function PreviewPane() {
                 <button onClick={dismiss} style={BTN}>✕ Close</button>
               </div>
             </div>
-            {error && (
+            {screenshotError && (
               <div style={{ color: '#f87171', fontSize: 13, padding: '8px 12px', background: '#1e0a0a', borderRadius: 6 }}>
-                {error}
+                {screenshotError}
               </div>
             )}
             {imageUrl && (

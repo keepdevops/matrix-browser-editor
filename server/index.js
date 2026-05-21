@@ -8,6 +8,7 @@ const agentRouter = require('./routes/agent');
 const previewRouter = require('./routes/preview');
 const connectorRouter = require('./routes/connector');
 const inlineRouter = require('./routes/inline');
+const auditRouter = require('./routes/audit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,6 +17,7 @@ app.use(cors({ origin: process.env.EDITOR_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '2mb' }));
 
 app.use('/api/inline', inlineRouter);
+app.use('/api/audit', auditRouter);
 app.use('/api/agent', agentRouter);
 app.use('/api/preview', previewRouter);
 app.use('/api/connector', connectorRouter);

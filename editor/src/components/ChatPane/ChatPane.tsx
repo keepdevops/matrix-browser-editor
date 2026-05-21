@@ -10,7 +10,7 @@ const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
 export function ChatPane() {
   const { messages, isStreaming, streamBuffer, error, clearMessages } = useAgentStore();
-  const { activeTemplate, pendingScreenshot, setPendingScreenshot } = useSessionStore();
+  const { activeTemplate, pendingScreenshot, setPendingScreenshot, pendingChatMessage, setPendingChatMessage } = useSessionStore();
   const { send } = useAgentStream();
   const [swarmEnabled, setSwarmEnabled] = useState(false);
 
@@ -74,6 +74,8 @@ export function ChatPane() {
         attachedImage={pendingScreenshot}
         onImageAttach={setPendingScreenshot}
         onClearImage={() => setPendingScreenshot(null)}
+        initialValue={pendingChatMessage}
+        onInitialValueConsumed={() => setPendingChatMessage(null)}
       />
     </div>
   );
