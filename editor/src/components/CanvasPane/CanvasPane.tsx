@@ -2,6 +2,7 @@ import React from 'react';
 import { Puck } from '@measured/puck';
 import '@measured/puck/dist/index.css';
 import { usePuckStore } from '../../store/puckStore';
+import { useLibraryStore } from '../../store/libraryStore';
 import { useEditorStore } from '../../store/editorStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { usePuckConfig } from './usePuckConfig';
@@ -19,7 +20,9 @@ export function CanvasPane() {
   const config = usePuckConfig();
   const { sendToEditor } = useCanvasExport();
 
+  const { components: library } = useLibraryStore();
   const hasComponents = Object.keys(config.components).length > 0;
+  const hasLibraryItems = library.length > 0;
   const slotCount = data.content.length;
 
   const handleExport = () => {
@@ -55,7 +58,7 @@ export function CanvasPane() {
       </div>
 
       {/* Empty state when no library components */}
-      {!hasComponents && (
+      {!hasLibraryItems && !code.trim() && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#475569', padding: 32 }}>
           <span style={{ fontSize: 32 }}>🧩</span>
           <p style={{ margin: 0, fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 1.6 }}>
@@ -65,7 +68,7 @@ export function CanvasPane() {
       )}
 
       {/* Puck editor */}
-      {hasComponents && (
+      {(hasLibraryItems || code.trim()) && (
         <div style={{ flex: 1, overflow: 'hidden', colorScheme: 'light' }}>
           <Puck
             config={config}

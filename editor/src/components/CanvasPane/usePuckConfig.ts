@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { Config } from '@measured/puck';
 import { useLibraryStore } from '../../store/libraryStore';
 import { useEditorStore } from '../../store/editorStore';
@@ -24,7 +24,7 @@ export function usePuckConfig(): Config {
         },
         defaultProps: { propsJson: '{}', height: 200 } as Record<string, unknown>,
         render: ({ propsJson, height }: { propsJson: string; height: number }) =>
-          PuckItemFrame({ code: item.code, propsJson, height: Number(height) || 200, styleSystem, theme }),
+          React.createElement(PuckItemFrame, { code: item.code, propsJson, height: Number(height) || 200, styleSystem, theme }),
       };
     });
 
@@ -40,7 +40,7 @@ export function usePuckConfig(): Config {
         },
         defaultProps: { propsJson: '{}', height: 200 } as Record<string, unknown>,
         render: ({ propsJson, height }: { propsJson: string; height: number }) =>
-          PuckItemFrame({ code, propsJson, height: Number(height) || 200, styleSystem, theme }),
+          React.createElement(PuckItemFrame, { code, propsJson, height: Number(height) || 200, styleSystem, theme }),
       };
     }
 
