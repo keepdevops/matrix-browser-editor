@@ -19,16 +19,20 @@ const BTN: React.CSSProperties = {
 const BTN_PRIMARY: React.CSSProperties = { ...BTN, background: '#6366f1', border: '1px solid #6366f1', color: '#fff' };
 
 async function formatCode(code: string, lang: string): Promise<string> {
-  const prettier = await import('prettier/standalone');
-  const parserName = lang === 'ts' || lang === 'js' ? 'babel' : 'babel';
-  const [babelPlugin, tsPlugin] = await Promise.all([
+  const [prettier, babelPlugin, tsPlugin, estreePlugin] = await Promise.all([
+    import('prettier/standalone'),
     import('prettier/plugins/babel'),
     import('prettier/plugins/typescript'),
     import('prettier/plugins/estree'),
   ]);
+  const isTs = lang === 'tsx' || lang === 'ts';
   return prettier.format(code, {
-    parser: lang === 'ts' || lang === 'tsx' ? 'typescript' : 'babel',
-    plugins: [babelPlugin.default ?? babelPlugin, tsPlugin.default ?? tsPlugin],
+    parser: isTs ? 'typescript' : 'babel',
+    plugins: [
+      babelPlugin.default ?? babelPlugin,
+      tsPlugin.default ?? tsPlugin,
+      estreePlugin.default ?? estreePlugin,
+    ],
     semi: true, singleQuote: true, tabWidth: 2, printWidth: 100,
   });
 }

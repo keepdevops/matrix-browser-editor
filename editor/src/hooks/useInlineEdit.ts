@@ -36,7 +36,7 @@ export function useInlineEdit(editorRef: React.MutableRefObject<Monaco.editor.IS
     if (!editor) return;
     setLoading(true);
     try {
-      const res = await fetch(`${SERVER}/api/agent/inline`, {
+      const res = await fetch(`${SERVER}/api/inline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selectedCode: state.selectedText, instruction: instruction.trim(), context: editor.getValue() }),

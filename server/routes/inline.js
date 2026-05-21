@@ -35,7 +35,9 @@ router.post('/', async (req, res) => {
       system: 'You are a precise code editor. Follow the instruction exactly. Return only the replacement code with no explanation or markdown.',
       messages: [{ role: 'user', content: prompt }],
     });
-    const replacement = message.content[0]?.text?.trim() ?? selectedCode;
+    const raw = message.content[0]?.text?.trim() ?? selectedCode;
+    // Strip markdown code fences if Claude wrapped the response
+    const replacement = raw.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim() || raw;
     res.json({ replacement });
   } catch (err) {
     console.error('[inline] error:', err.message);
