@@ -5,7 +5,9 @@ import { useSessionStore } from '../../store/sessionStore';
 import { useAgentStore } from '../../store/agentStore';
 import { useEditorStore } from '../../store/editorStore';
 import { useAudit } from '../../hooks/useAudit';
+import { useInspect } from '../../hooks/useInspect';
 import { AuditPanel } from './AuditPanel';
+import { InspectPanel } from './InspectPanel';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -24,13 +26,15 @@ const VIEWPORTS = [
 ] as const;
 
 export function PreviewPane() {
-  const { iframeRef, splitRef } = usePreview();
+  const [inspectMode, setInspectMode] = React.useState(false);
+  const { iframeRef, splitRef } = usePreview(inspectMode);
   const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { code } = useEditorStore();
   const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
   const { issues, loading: auditLoading, error: auditError, ran: auditRan, audit, clear: clearAudit } = useAudit();
-  const [viewportWidth, setViewportWidth] = React.useState(0); // 0 = full
+  const { info: inspectInfo, dismiss: dismissInspect } = useInspect(inspectMode);
+  const [viewportWidth, setViewportWidth] = React.useState(0);
   const [splitView, setSplitView] = React.useState(false);
 
   return (
@@ -74,6 +78,13 @@ export function PreviewPane() {
             ⧉ Split
           </button>
           <button
+            onClick={() => { setInspectMode(m => !m); dismissInspect(); }}
+            title="Click-to-inspect elements"
+            style={{ ...BTN, color: inspectMode ? '#34d399' : '#94a3b8', borderColor: inspectMode ? '#059669' : '#334155', background: inspectMode ? 'rgba(16,185,129,0.12)' : '#1e293b' }}
+          >
+            🔎 Inspect
+          </button>
+          <button
             onClick={() => audit(code)}
             disabled={auditLoading || !code}
             style={{ ...BTN, color: auditLoading ? '#475569' : '#86efac', borderColor: auditLoading ? '#1e293b' : '#166534', opacity: !code ? 0.4 : 1 }}
@@ -98,6 +109,12 @@ export function PreviewPane() {
 
       {auditRan && (
         <AuditPanel issues={issues} error={auditError} onClear={clearAudit} />
+      )}
+
+      {inspectMode && (
+        <div style={{ padding: '4px 16px', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid #059669', fontSize: 11, color: '#34d399' }}>
+          🔎 Inspect mode — click any element in the preview to see its styles
+        </div>
       )}
 
       <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', gap: splitView ? 1 : 0, justifyContent: splitView ? 'stretch' : 'center', background: splitView ? '#0a0f1e' : undefined }}>
@@ -127,9 +144,14 @@ export function PreviewPane() {
               borderTop: 'none',
               background: theme === 'dark' ? '#0f172a' : '#f8fafc',
               flexShrink: 0,
+              cursor: inspectMode ? 'crosshair' : undefined,
             }}
           />
         </div>
+
+        {inspectInfo && (
+          <InspectPanel info={inspectInfo} onDismiss={dismissInspect} />
+        )}
       </div>
 
       {(imageUrl || screenshotError) && (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { useSessionStore } from '../store/sessionStore';
+import { INSPECT_SCRIPT } from './useInspect';
 
 const CDN: Record<string, string[]> = {
   tailwind: ['<script src="https://cdn.tailwindcss.com"></script>'],
@@ -127,13 +128,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 </html>`;
 }
 
-export function usePreview() {
+export function usePreview(inspectMode = false) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const splitRef = useRef<HTMLIFrameElement>(null);
   const { code } = useEditorStore();
   const { styleSystem, theme } = useSessionStore();
 
-  const srcdoc = useMemo(() => buildSrcdoc(code, styleSystem, theme), [code, styleSystem, theme]);
+  const srcdoc = useMemo(() => {
+    const doc = buildSrcdoc(code, styleSystem, theme);
+    if (!inspectMode) return doc;
+    return doc.replace('</body>', `<script>${INSPECT_SCRIPT}<\/script>\n</body>`);
+  }, [code, styleSystem, theme, inspectMode]);
 
   useEffect(() => {
     [iframeRef, splitRef].forEach((ref) => {
