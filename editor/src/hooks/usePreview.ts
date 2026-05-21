@@ -60,16 +60,14 @@ function buildSrcdoc(code: string, styleSystem: string, theme: string): string {
     .replace(/^import\s+.*from\s+['"]react-chartjs-2['"];?/gm, '')
     .replace(/^import\s+.*from\s+['"]chart\.js[^'"]*['"];?/gm, '')
     .replace(/^export\s+default\s+/m, 'window.__Component = ')
-    .replace(/^export\s+(?:function|const|class)\s+(\w+)/m, (_, n) => `window.__Component = function ${n}`);
+    .replace(/^export\s+(?:function|const|class)\s+(\w+)/m, (_, n) => `window.__Component = window.${n} = function ${n}`);
 
   const umdShims = [
     rechartsMatch ? `const { ${rechartsMatch[1].trim()} } = window.Recharts || {};` : '',
     chartjs2Match ? `const { ${chartjs2Match[1].trim()} } = window.ReactChartjs2 || {};` : '',
   ].filter(Boolean).join('\n    ');
 
-  const renderCall = componentName
-    ? `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component || ${componentName}, null));`
-    : `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component, null));`;
+  const renderCall = `ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.__Component, null));`;
 
   return `<!DOCTYPE html>
 <html lang="en" class="${darkClass}">
