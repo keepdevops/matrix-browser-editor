@@ -93,13 +93,36 @@ export function PreviewPane() {
                     >
                       ✏ Edit with AI
                     </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(imageUrl!);
+                          const blob = await res.blob();
+                          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                        } catch (err) { console.error('[PreviewPane] copy failed:', err); }
+                      }}
+                      style={BTN}
+                    >
+                      📋 Copy
+                    </button>
                     <a
                       href={imageUrl}
                       download="component.png"
                       style={{ ...BTN, textDecoration: 'none', color: '#7dd3fc' }}
                     >
-                      ↓ Download
+                      ↓ Save
                     </a>
+                    <button
+                      onClick={() => {
+                        const name = prompt('Filename:', 'component.png');
+                        if (!name || !imageUrl) return;
+                        const a = document.createElement('a');
+                        a.href = imageUrl; a.download = name; a.click();
+                      }}
+                      style={BTN}
+                    >
+                      ↓ Save As…
+                    </button>
                   </>
                 )}
                 <button onClick={dismiss} style={BTN}>✕ Close</button>

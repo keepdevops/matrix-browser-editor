@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent, type DragEvent, type ClipboardEvent } from 'react';
+import { ImageEditorModal } from '../ImageEditor/ImageEditorModal';
+
+type PasteEvent = globalThis.ClipboardEvent;
 
 interface PromptInputProps {
   onSend: (prompt: string, image?: string | null) => void;
@@ -20,12 +23,32 @@ function readFileAsDataUrl(file: File): Promise<string> {
 export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, onClearImage }: PromptInputProps) {
   const [value, setValue] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (attachedImage) textareaRef.current?.focus();
   }, [attachedImage]);
+
+  // Global paste listener: catches Ctrl+V even when textarea isn't focused
+  useEffect(() => {
+    const handleGlobalPaste = (e: PasteEvent) => {
+      // Don't intercept if user is typing in an input/textarea (let text paste normally)
+      const target = e.target as HTMLElement;
+      const isTextInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT';
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const imageItem = items.find(i => i.type.startsWith('image/'));
+      if (!imageItem) return;
+      // Has an image — always intercept
+      if (!isTextInput) e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (file) handleImageFile(file);
+    };
+    document.addEventListener('paste', handleGlobalPaste as EventListener);
+    return () => document.removeEventListener('paste', handleGlobalPaste as EventListener);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onImageAttach]);
 
   const submit = () => {
     const trimmed = value.trim();
@@ -84,6 +107,14 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
   };
 
   return (
+    <>
+    {editorOpen && attachedImage && (
+      <ImageEditorModal
+        src={attachedImage}
+        onClose={() => setEditorOpen(false)}
+        onUseInPrompt={(dataUrl) => { onImageAttach?.(dataUrl); setEditorOpen(false); }}
+      />
+    )}
     <div
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -114,7 +145,9 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
               <img
                 src={attachedImage}
                 alt="Attached"
-                style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #475569' }}
+                onClick={() => setEditorOpen(true)}
+                title="Click to open image editor"
+                style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #475569', cursor: 'pointer' }}
               />
               <button
                 onClick={onClearImage}
@@ -184,5 +217,6 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
         )}
       </div>
     </div>
+    </>
   );
 }
