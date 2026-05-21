@@ -9,6 +9,7 @@ import { useAgentStore } from '../../store/agentStore';
 import { useFileTabStore } from '../../store/fileTabStore';
 import { useInlineEdit } from '../../hooks/useInlineEdit';
 import { useAgentStream } from '../../hooks/useAgentStream';
+import { useShare } from '../../hooks/useShare';
 import { ComponentTabs } from './ComponentTabs';
 import { FileTabs } from './FileTabs';
 import { RefactorMenu } from './RefactorMenu';
@@ -47,6 +48,7 @@ export function CodePane() {
   const { updateActiveCode } = useFileTabStore();
   const { status, message, exportComponent, injectIntoFile, reset } = useConnector();
   const { send: sendRefactor } = useAgentStream();
+  const { loading: shareLoading, shareId, share, dismiss: dismissShare } = useShare();
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const { inlineEdit, instruction, setInstruction, apply, dismiss, loading: inlineLoading, onSelectionChange } = useInlineEdit(editorRef);
@@ -124,6 +126,14 @@ export function CodePane() {
           <button onClick={toggleDiffMode} style={isDiffMode ? BTN_PRIMARY : BTN}>{isDiffMode ? 'Diff On' : 'Diff Off'}</button>
           <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
           <button onClick={() => saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' })} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
+          <button
+            onClick={async () => { const url = await share(); if (url) setTimeout(dismissShare, 4000); }}
+            disabled={shareLoading || !code}
+            title={shareId ? `Copied! Share ID: ${shareId}` : 'Share — copies link to clipboard'}
+            style={{ ...BTN, opacity: shareLoading || !code ? 0.5 : 1, color: shareId ? '#34d399' : '#94a3b8', borderColor: shareId ? '#059669' : '#334155' }}
+          >
+            {shareLoading ? '⏳' : shareId ? '✓ Copied' : '🔗 Share'}
+          </button>
           <button onClick={handleExport} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Export</button>
           <button onClick={() => { setInjectPath(''); setShowInject(true); }} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Inject</button>
           <RefactorMenu

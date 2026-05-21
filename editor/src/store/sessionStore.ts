@@ -9,7 +9,7 @@ interface SessionState {
   connectorMode: 'none' | 'export' | 'analyze' | 'inject' | 'live';
   targetProjectPath: string;
   recentPaths: string[];
-  sidebarTab: 'templates' | 'style' | 'tokens' | 'snapshots' | 'connector' | 'library';
+  sidebarTab: 'templates' | 'style' | 'tokens' | 'animation' | 'snapshots' | 'connector' | 'library';
   pendingScreenshot: string | null;
   rightTab: 'preview' | 'code';
 
