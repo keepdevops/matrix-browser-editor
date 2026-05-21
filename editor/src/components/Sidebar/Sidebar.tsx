@@ -4,11 +4,13 @@ import { StyleSystemPicker } from './StyleSystemPicker';
 import { ConnectorPanel } from './ConnectorPanel';
 import { LibraryPanel } from './LibraryPanel';
 import { TokensPanel } from './TokensPanel';
+import { SnapshotsPanel } from './SnapshotsPanel';
 
 const TABS = [
   { id: 'templates' as const, label: 'Templates', icon: '⚡' },
   { id: 'style' as const, label: 'Style', icon: '🎨' },
   { id: 'tokens' as const, label: 'Tokens', icon: '🎛' },
+  { id: 'snapshots' as const, label: 'Snapshots', icon: '📷' },
   { id: 'connector' as const, label: 'Connector', icon: '🔌' },
   { id: 'library' as const, label: 'Library', icon: '📦' },
 ] as const;
@@ -113,6 +115,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {sidebarTab === 'templates' && <TemplateLibrary />}
         {sidebarTab === 'style' && <StyleSystemPicker />}
         {sidebarTab === 'tokens' && <TokensPanel />}
+        {sidebarTab === 'snapshots' && <SnapshotsPanel />}
         {sidebarTab === 'connector' && <ConnectorPanel />}
         {sidebarTab === 'library' && <LibraryPanel />}
       </div>

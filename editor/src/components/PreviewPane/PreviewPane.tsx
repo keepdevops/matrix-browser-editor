@@ -24,13 +24,14 @@ const VIEWPORTS = [
 ] as const;
 
 export function PreviewPane() {
-  const { iframeRef } = usePreview();
+  const { iframeRef, splitRef } = usePreview();
   const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { code } = useEditorStore();
   const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
   const { issues, loading: auditLoading, error: auditError, ran: auditRan, audit, clear: clearAudit } = useAudit();
   const [viewportWidth, setViewportWidth] = React.useState(0); // 0 = full
+  const [splitView, setSplitView] = React.useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
@@ -66,6 +67,13 @@ export function PreviewPane() {
             ))}
           </div>
           <button
+            onClick={() => setSplitView(s => !s)}
+            title="Toggle mobile/desktop split view"
+            style={{ ...BTN, color: splitView ? '#a5b4fc' : '#94a3b8', borderColor: splitView ? '#4f46e5' : '#334155', background: splitView ? 'rgba(99,102,241,0.15)' : '#1e293b' }}
+          >
+            ⧉ Split
+          </button>
+          <button
             onClick={() => audit(code)}
             disabled={auditLoading || !code}
             style={{ ...BTN, color: auditLoading ? '#475569' : '#86efac', borderColor: auditLoading ? '#1e293b' : '#166534', opacity: !code ? 0.4 : 1 }}
@@ -92,21 +100,36 @@ export function PreviewPane() {
         <AuditPanel issues={issues} error={auditError} onClear={clearAudit} />
       )}
 
-      <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
-        <iframe
-          ref={iframeRef}
-          title="Component Preview"
-          sandbox="allow-scripts"
-          style={{
-            width: viewportWidth > 0 ? viewportWidth : '100%',
-            height: '100%',
-            minHeight: '100%',
-            border: viewportWidth > 0 ? '1px solid #334155' : 'none',
-            borderTop: 'none',
-            background: theme === 'dark' ? '#0f172a' : '#f8fafc',
-            flexShrink: 0,
-          }}
-        />
+      <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', gap: splitView ? 1 : 0, justifyContent: splitView ? 'stretch' : 'center', background: splitView ? '#0a0f1e' : undefined }}>
+        {splitView && (
+          <div style={{ display: 'flex', flexDirection: 'column', width: 375, flexShrink: 0, borderRight: '1px solid #1e293b' }}>
+            <div style={{ padding: '2px 8px', background: '#0a0f1e', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.06em' }}>📱 MOBILE 375px</div>
+            <iframe
+              ref={splitRef}
+              title="Mobile Preview"
+              sandbox="allow-scripts"
+              style={{ flex: 1, width: '100%', border: 'none', background: theme === 'dark' ? '#0f172a' : '#f8fafc' }}
+            />
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+          {splitView && <div style={{ padding: '2px 8px', background: '#0a0f1e', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.06em' }}>🖥 DESKTOP</div>}
+          <iframe
+            ref={iframeRef}
+            title="Component Preview"
+            sandbox="allow-scripts"
+            style={{
+              flex: 1,
+              width: (!splitView && viewportWidth > 0) ? viewportWidth : '100%',
+              height: splitView ? undefined : '100%',
+              minHeight: splitView ? undefined : '100%',
+              border: (!splitView && viewportWidth > 0) ? '1px solid #334155' : 'none',
+              borderTop: 'none',
+              background: theme === 'dark' ? '#0f172a' : '#f8fafc',
+              flexShrink: 0,
+            }}
+          />
+        </div>
       </div>
 
       {(imageUrl || screenshotError) && (

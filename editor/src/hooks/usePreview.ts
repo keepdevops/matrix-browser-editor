@@ -129,20 +129,21 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 export function usePreview() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const splitRef = useRef<HTMLIFrameElement>(null);
   const { code } = useEditorStore();
   const { styleSystem, theme } = useSessionStore();
 
   const srcdoc = useMemo(() => buildSrcdoc(code, styleSystem, theme), [code, styleSystem, theme]);
 
   useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    try {
-      iframe.srcdoc = srcdoc;
-    } catch (err) {
-      console.error('[usePreview] srcdoc error:', err);
-    }
+    [iframeRef, splitRef].forEach((ref) => {
+      const iframe = ref.current;
+      if (!iframe) return;
+      try { iframe.srcdoc = srcdoc; } catch (err) {
+        console.error('[usePreview] srcdoc error:', err);
+      }
+    });
   }, [srcdoc]);
 
-  return { iframeRef };
+  return { iframeRef, splitRef };
 }
