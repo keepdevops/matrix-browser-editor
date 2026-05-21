@@ -1,29 +1,27 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChatPane } from './components/ChatPane/ChatPane';
 import { PreviewPane } from './components/PreviewPane/PreviewPane';
 import { CodePane } from './components/CodePane/CodePane';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { useSessionStore } from './store/sessionStore';
+
+const TAB_BTN = (active: boolean): React.CSSProperties => ({
+  padding: '6px 16px',
+  background: active ? '#1e293b' : 'transparent',
+  border: 'none',
+  borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+  color: active ? '#f1f5f9' : '#475569',
+  cursor: 'pointer',
+  fontSize: 12,
+  fontWeight: active ? 600 : 400,
+  letterSpacing: '0.04em',
+  transition: 'all 0.12s',
+  whiteSpace: 'nowrap' as const,
+});
 
 export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [splitPercent, setSplitPercent] = useState(50);
-  const dragging = React.useRef(false);
-
-  const onDividerMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-    const onMove = (mv: MouseEvent) => {
-      if (!dragging.current) return;
-      const container = document.getElementById('right-panel');
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const pct = Math.min(80, Math.max(20, ((mv.clientY - rect.top) / rect.height) * 100));
-      setSplitPercent(pct);
-    };
-    const onUp = () => { dragging.current = false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
+  const { rightTab, setRightTab } = useSessionStore();
 
   const sidebarWidth = sidebarCollapsed ? 44 : 200;
 
@@ -45,26 +43,30 @@ export default function App() {
         <ChatPane />
       </div>
 
-      <div id="right-panel" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ height: `${splitPercent}%`, overflow: 'hidden', borderBottom: '1px solid #1e293b' }}>
-          <PreviewPane />
+      {/* Right panel — tabbed Preview / Code */}
+      <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* Tab switcher strip */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid #1e293b',
+          background: '#0a0f1e',
+          flexShrink: 0,
+          paddingLeft: 4,
+        }}>
+          <button style={TAB_BTN(rightTab === 'preview')} onClick={() => setRightTab('preview')}>
+            ▶ Preview
+          </button>
+          <button style={TAB_BTN(rightTab === 'code')} onClick={() => setRightTab('code')}>
+            {'</>'} Code
+          </button>
         </div>
 
-        {/* Drag handle */}
-        <div
-          onMouseDown={onDividerMouseDown}
-          style={{
-            height: 5,
-            background: '#1e293b',
-            cursor: 'row-resize',
-            flexShrink: 0,
-            transition: 'background 0.1s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#4f46e5')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#1e293b')}
-        />
-
-        <div style={{ flex: 1, overflow: 'hidden' }}>
+        {/* Pane — only the active one is visible; both stay mounted to preserve state */}
+        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'preview' ? 'flex' : 'none', flexDirection: 'column' }}>
+          <PreviewPane />
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
           <CodePane />
         </div>
       </div>

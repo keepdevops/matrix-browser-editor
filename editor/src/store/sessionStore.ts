@@ -11,6 +11,7 @@ interface SessionState {
   recentPaths: string[];
   sidebarTab: 'templates' | 'style' | 'connector' | 'library';
   pendingScreenshot: string | null;
+  rightTab: 'preview' | 'code';
 
   setStyleSystem: (s: StyleSystem) => void;
   setTheme: (t: Theme) => void;
@@ -20,6 +21,7 @@ interface SessionState {
   addRecentPath: (p: string) => void;
   setSidebarTab: (tab: SessionState['sidebarTab']) => void;
   setPendingScreenshot: (url: string | null) => void;
+  setRightTab: (tab: 'preview' | 'code') => void;
 }
 
 export const useSessionStore = create<SessionState>()(persist((set) => ({
@@ -31,6 +33,7 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   recentPaths: [],
   sidebarTab: 'templates',
   pendingScreenshot: null,
+  rightTab: 'preview',
 
   setStyleSystem: (styleSystem) => set({ styleSystem }),
   setTheme: (theme) => set({ theme }),
@@ -42,6 +45,7 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   })),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setPendingScreenshot: (pendingScreenshot) => set({ pendingScreenshot }),
+  setRightTab: (rightTab) => set({ rightTab }),
 }), {
   name: 'session-store',
   partialize: (s) => ({ styleSystem: s.styleSystem, theme: s.theme, recentPaths: s.recentPaths }),

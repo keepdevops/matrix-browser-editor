@@ -15,7 +15,7 @@ interface StreamOptions {
 export function useAgentStream() {
   const { addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, messages } = useAgentStore();
   const { setCode, setComponentName, setLanguage } = useEditorStore();
-  const { styleSystem, theme } = useSessionStore();
+  const { styleSystem, theme, setRightTab } = useSessionStore();
   const { openTab, tabs, activeTabId, setActiveTab } = useFileTabStore();
 
   const send = useCallback(async ({ prompt, templateCode, screenshotImage }: StreamOptions) => {
@@ -73,6 +73,7 @@ export function useAgentStream() {
                 setCode(component.code);
                 setComponentName(component.componentName);
                 setLanguage(component.language as 'tsx' | 'jsx' | 'ts' | 'js');
+                setRightTab('code');
                 // Update active tab or open a new one if name differs
                 const activeTab = tabs.find(t => t.id === activeTabId);
                 if (activeTab && activeTab.name === component.componentName) {
@@ -99,7 +100,7 @@ export function useAgentStream() {
       console.error('[useAgentStream] error:', message);
       setError(message);
     }
-  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, styleSystem, theme, messages]);
+  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, setRightTab, styleSystem, theme, messages]);
 
   return { send };
 }
