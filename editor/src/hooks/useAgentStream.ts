@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useAgentStore } from '../store/agentStore';
 import { useEditorStore } from '../store/editorStore';
 import { useSessionStore } from '../store/sessionStore';
+import { useFileTabStore } from '../store/fileTabStore';
 
 const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -15,6 +16,7 @@ export function useAgentStream() {
   const { addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, messages } = useAgentStore();
   const { setCode, setComponentName, setLanguage } = useEditorStore();
   const { styleSystem, theme } = useSessionStore();
+  const { openTab, tabs, activeTabId, setActiveTab } = useFileTabStore();
 
   const send = useCallback(async ({ prompt, templateCode, screenshotImage }: StreamOptions) => {
     addUserMessage(prompt);
@@ -71,6 +73,15 @@ export function useAgentStream() {
                 setCode(component.code);
                 setComponentName(component.componentName);
                 setLanguage(component.language as 'tsx' | 'jsx' | 'ts' | 'js');
+                // Update active tab or open a new one if name differs
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (activeTab && activeTab.name === component.componentName) {
+                  // already on the right tab — code syncs via updateActiveCode in CodePane
+                } else {
+                  const existing = tabs.find(t => t.name === component.componentName);
+                  if (existing) { setActiveTab(existing.id); }
+                  else { openTab({ name: component.componentName, code: component.code, language: component.language as 'tsx' | 'jsx' | 'ts' | 'js' }); }
+                }
               }
               return;
             } else if (event.type === 'error') {
