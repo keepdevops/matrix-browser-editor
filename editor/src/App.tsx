@@ -3,6 +3,7 @@ import { ChatPane } from './components/ChatPane/ChatPane';
 import { PreviewPane } from './components/PreviewPane/PreviewPane';
 import { CodePane } from './components/CodePane/CodePane';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { CanvasPane } from './components/CanvasPane/CanvasPane';
 import { useSessionStore } from './store/sessionStore';
 
 const TAB_BTN = (active: boolean): React.CSSProperties => ({
@@ -60,14 +61,20 @@ export default function App() {
           <button style={TAB_BTN(rightTab === 'code')} onClick={() => setRightTab('code')}>
             {'</>'} Code
           </button>
+          <button style={TAB_BTN(rightTab === 'canvas')} onClick={() => setRightTab('canvas')}>
+            🧩 Canvas
+          </button>
         </div>
 
-        {/* Pane — only the active one is visible; both stay mounted to preserve state */}
+        {/* Panes — only the active one is visible; all stay mounted to preserve state */}
         <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'preview' ? 'flex' : 'none', flexDirection: 'column' }}>
           <PreviewPane />
         </div>
         <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
           <CodePane />
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'canvas' ? 'flex' : 'none', flexDirection: 'column' }}>
+          <CanvasPane />
         </div>
       </div>
     </div>

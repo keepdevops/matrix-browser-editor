@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+export { INSPECT_SCRIPT } from './useBuildSrcdoc';
 
 export interface InspectInfo {
   tagName: string;
@@ -27,32 +28,3 @@ export function useInspect(enabled: boolean) {
 
   return { info, dismiss };
 }
-
-export const INSPECT_SCRIPT = `
-(function(){
-  var hl = null;
-  document.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    var el = e.target;
-    var cs = window.getComputedStyle(el);
-    var styles = {};
-    ['color','background-color','font-size','font-family','padding','margin',
-     'border-radius','display','flex-direction','gap','width','height'].forEach(function(p){
-      styles[p] = cs.getPropertyValue(p);
-    });
-    var rect = el.getBoundingClientRect();
-    window.parent.postMessage({
-      type:'inspect',
-      payload:{
-        tagName: el.tagName.toLowerCase(),
-        id: el.id || '',
-        classes: Array.from(el.classList),
-        styles: styles,
-        text: (el.textContent || '').slice(0,80).trim(),
-        rect: { width: Math.round(rect.width), height: Math.round(rect.height) }
-      }
-    },'*');
-  }, true);
-})();
-`;

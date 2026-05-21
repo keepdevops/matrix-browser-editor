@@ -11,7 +11,7 @@ interface SessionState {
   recentPaths: string[];
   sidebarTab: 'templates' | 'style' | 'tokens' | 'animation' | 'snapshots' | 'connector' | 'library';
   pendingScreenshot: string | null;
-  rightTab: 'preview' | 'code';
+  rightTab: 'preview' | 'code' | 'canvas';
 
   setStyleSystem: (s: StyleSystem) => void;
   setTheme: (t: Theme) => void;
@@ -21,7 +21,7 @@ interface SessionState {
   addRecentPath: (p: string) => void;
   setSidebarTab: (tab: SessionState['sidebarTab']) => void;
   setPendingScreenshot: (url: string | null) => void;
-  setRightTab: (tab: 'preview' | 'code') => void;
+  setRightTab: (tab: 'preview' | 'code' | 'canvas') => void;
   pendingChatMessage: string | null;
   setPendingChatMessage: (msg: string | null) => void;
 }
