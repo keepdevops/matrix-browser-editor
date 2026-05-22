@@ -89,18 +89,38 @@ function ComponentCard({ c }: { c: SavedComponent }) {
 
 export function LibraryPanel() {
   const { components, clear } = useLibraryStore();
+  const [query, setQuery] = useState('');
+
+  const filtered = query.trim()
+    ? components.filter((c) =>
+        c.name.toLowerCase().includes(query.toLowerCase()) ||
+        c.description?.toLowerCase().includes(query.toLowerCase())
+      )
+    : components;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 12px', borderBottom: '1px solid #1e293b', flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
-          {components.length} saved
-        </span>
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid #1e293b', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>
+            {query ? `${filtered.length} of ${components.length}` : `${components.length} saved`}
+          </span>
+          {components.length > 0 && (
+            <button onClick={clear} style={{ ...BTN, fontSize: 10 }}>Clear all</button>
+          )}
+        </div>
         {components.length > 0 && (
-          <button onClick={clear} style={{ ...BTN, fontSize: 10 }}>Clear all</button>
+          <input
+            type="text"
+            placeholder="Search components…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              width: '100%', padding: '5px 10px', borderRadius: 6, boxSizing: 'border-box',
+              border: '1px solid #1e293b', background: '#0f172a',
+              color: '#f1f5f9', fontSize: 12, outline: 'none',
+            }}
+          />
         )}
       </div>
 
@@ -110,8 +130,10 @@ export function LibraryPanel() {
             <div style={{ fontSize: 24, marginBottom: 8 }}>📦</div>
             <p style={{ margin: 0 }}>No saved components yet.<br />Use "Save to Library" after generating.</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <p style={{ color: '#475569', fontSize: 12, textAlign: 'center', paddingTop: 24 }}>No components match "{query}"</p>
         ) : (
-          components.map((c) => <ComponentCard key={c.id} c={c} />)
+          filtered.map((c) => <ComponentCard key={c.id} c={c} />)
         )}
       </div>
     </div>
