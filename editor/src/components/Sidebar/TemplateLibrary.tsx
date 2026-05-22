@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ALL_TEMPLATES, CATEGORIES, searchTemplates } from '../../templates';
 import { useSessionStore } from '../../store/sessionStore';
 import { useEditorStore } from '../../store/editorStore';
+import { TemplatePreviewTooltip } from './TemplatePreviewTooltip';
 import type { Template } from '../../lib/schemas';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -9,10 +10,15 @@ const CATEGORY_ICONS: Record<string, string> = {
   card: '🃏', nav: '🧭', chart: '📈', sidebar: '⬛',
 };
 
+const HOVER_DELAY_MS = 400;
+
 export function TemplateLibrary() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const { setActiveTemplate, activeTemplate } = useSessionStore();
+  const [hoveredTemplate, setHoveredTemplate] = useState<{ template: Template; rect: DOMRect } | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { setActiveTemplate, activeTemplate, styleSystem, theme } = useSessionStore();
   const { setCode, setComponentName } = useEditorStore();
 
   const filtered = query
@@ -30,24 +36,29 @@ export function TemplateLibrary() {
     }
   };
 
+  const handleMouseEnter = useCallback((t: Template, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    hoverTimer.current = setTimeout(() => setHoveredTemplate({ template: t, rect }), HOVER_DELAY_MS);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setHoveredTemplate(null);
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ padding: '10px 14px' }}>
         <input
           type="text"
-          placeholder="Search templates…"
+          placeholder={`Search ${ALL_TEMPLATES.length} templates…`}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={{
-            width: '100%',
-            padding: '6px 10px',
-            borderRadius: 8,
-            border: '1px solid #1e293b',
-            background: '#0f172a',
-            color: '#f1f5f9',
-            fontSize: 12,
-            outline: 'none',
-            boxSizing: 'border-box',
+            width: '100%', padding: '6px 10px', borderRadius: 8,
+            border: '1px solid #1e293b', background: '#0f172a',
+            color: '#f1f5f9', fontSize: 12, outline: 'none', boxSizing: 'border-box',
           }}
         />
       </div>
@@ -86,16 +97,13 @@ export function TemplateLibrary() {
             <button
               key={t.id}
               onClick={() => handleSelect(t)}
+              onMouseEnter={(e) => handleMouseEnter(t, e)}
+              onMouseLeave={handleMouseLeave}
               style={{
-                display: 'block',
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 10,
+                display: 'block', width: '100%', padding: '10px 12px', borderRadius: 10,
                 border: isActive ? '1px solid #6366f1' : '1px solid #1e293b',
                 background: isActive ? '#6366f115' : '#0f172a',
-                color: '#f1f5f9',
-                cursor: 'pointer',
-                textAlign: 'left',
+                color: '#f1f5f9', cursor: 'pointer', textAlign: 'left',
                 transition: 'all 0.15s',
               }}
             >
@@ -115,6 +123,15 @@ export function TemplateLibrary() {
           );
         })}
       </div>
+
+      {hoveredTemplate && (
+        <TemplatePreviewTooltip
+          template={hoveredTemplate.template}
+          anchorRect={hoveredTemplate.rect}
+          styleSystem={styleSystem}
+          theme={theme}
+        />
+      )}
     </div>
   );
 }
