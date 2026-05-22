@@ -132,6 +132,7 @@ export function CodePane() {
   // Keyboard shortcuts (placed after handleFormat to avoid TDZ)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setShowPaste(false); setShowInject(false); return; }
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
@@ -144,7 +145,7 @@ export function CodePane() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, code, componentName, language, lastComponent, pushHistory, saveToLibrary, markSaved, handleFormat, toggleDiffMode]);
+  }, [undo, redo, code, componentName, language, lastComponent, pushHistory, saveToLibrary, markSaved, handleFormat, toggleDiffMode, showPaste, showInject]);
 
   const handleExport = async () => {
     try { await exportComponent(targetProjectPath || undefined); setTimeout(reset, 3000); }
@@ -279,7 +280,7 @@ export function CodePane() {
       {/* Editor */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {isDiffMode ? (
-          <DiffEditor height="100%" language={monacoLang} theme="vs-dark" original={previousCode} modified={code}
+          <DiffEditor key={`diff-${monacoLang}`} height="100%" language={monacoLang} theme="vs-dark" original={previousCode} modified={code}
             options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13 }} />
         ) : (
           <Editor height="100%" language={monacoLang} theme="vs-dark" value={displayCode}
@@ -347,8 +348,8 @@ export function CodePane() {
 
       {/* Paste Component Modal */}
       {showPaste && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 24, width: 640, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div onClick={() => setShowPaste(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setShowPaste(false); }} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 24, width: 640, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>PASTE REACT COMPONENT</span>
               <button onClick={() => setShowPaste(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16 }}>✕</button>

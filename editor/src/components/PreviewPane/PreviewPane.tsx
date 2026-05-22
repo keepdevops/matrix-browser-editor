@@ -15,6 +15,7 @@ import { DeviceFrame } from './DeviceFrame';
 import { ScreenshotModal } from './ScreenshotModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
 import { useConsoleCapture } from '../../hooks/useConsoleCapture';
+import { PreviewOverflowMenu } from './PreviewOverflowMenu';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -181,40 +182,34 @@ export function PreviewPane() {
           >
             🔎 Inspect
           </button>
-          <button
-            onClick={() => setShowConsole(s => !s)}
-            title="Toggle console output"
-            style={{ ...BTN, color: showConsole ? '#a5b4fc' : consoleLogs.some(e => e.level === 'error') ? '#f87171' : consoleLogs.some(e => e.level === 'warn') ? '#fbbf24' : '#94a3b8', borderColor: showConsole ? '#4f46e5' : consoleLogs.some(e => e.level === 'error') ? '#991b1b' : '#334155', background: showConsole ? 'rgba(99,102,241,0.1)' : '#1e293b' }}
-          >
-            {'>'} Console{consoleLogs.length > 0 ? ` (${consoleLogs.length})` : ''}
-          </button>
-          <button
-            onClick={() => audit(code)}
-            disabled={auditLoading || !code}
-            style={{ ...BTN, color: auditLoading ? '#475569' : '#86efac', borderColor: auditLoading ? '#1e293b' : '#166534', opacity: !code ? 0.4 : 1 }}
-          >
-            {auditLoading ? '⏳ auditing…' : '🔍 Audit'}
-          </button>
-          <button
-            onClick={capture}
-            disabled={isCapturing}
-            style={{ ...BTN, color: isCapturing ? '#475569' : '#7dd3fc', borderColor: isCapturing ? '#1e293b' : '#1d4ed8' }}
-          >
-            {isCapturing ? '⏳ capturing…' : '📸 Screenshot'}
-          </button>
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            style={BTN}
-          >
-            {theme === 'dark' ? '☀ Light' : '☾ Dark'}
-          </button>
-          <button
-            onClick={() => setPreviewBg(bg => bg === 'dark' ? 'light' : bg === 'light' ? 'checker' : 'dark')}
-            title={`Preview background: ${previewBg} (click to cycle)`}
-            style={{ ...BTN, fontFamily: 'monospace', fontSize: 11 }}
-          >
-            {previewBg === 'dark' ? '▪ Bg' : previewBg === 'light' ? '□ Bg' : '⊞ Bg'}
-          </button>
+          <PreviewOverflowMenu actions={[
+            {
+              label: `> Console${consoleLogs.length > 0 ? ` (${consoleLogs.length})` : ''}`,
+              active: showConsole,
+              color: consoleLogs.some(e => e.level === 'error') ? '#f87171' : consoleLogs.some(e => e.level === 'warn') ? '#fbbf24' : '#cbd5e1',
+              onClick: () => setShowConsole(s => !s),
+            },
+            {
+              label: auditLoading ? '⏳ Auditing…' : '🔍 Audit',
+              disabled: auditLoading || !code,
+              color: '#86efac',
+              onClick: () => audit(code),
+            },
+            {
+              label: isCapturing ? '⏳ Capturing…' : '📸 Screenshot',
+              disabled: isCapturing,
+              color: '#7dd3fc',
+              onClick: capture,
+            },
+            {
+              label: theme === 'dark' ? '☀ Light mode' : '☾ Dark mode',
+              onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+            },
+            {
+              label: `▪ Bg: ${previewBg}`,
+              onClick: () => setPreviewBg(bg => bg === 'dark' ? 'light' : bg === 'light' ? 'checker' : 'dark'),
+            },
+          ]} />
         </div>
       </div>
 

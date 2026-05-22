@@ -187,10 +187,13 @@ export default function App() {
               {/* Draggable divider */}
               <div
                 onMouseDown={onDividerMouseDown}
-                style={{ width: 5, background: '#1e293b', flexShrink: 0, cursor: 'col-resize', transition: 'background 0.1s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#4f46e5')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#1e293b')}
-              />
+                title="Drag to resize panels"
+                style={{ width: 6, background: '#1e293b', flexShrink: 0, cursor: 'col-resize', transition: 'background 0.15s', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#4f46e5'; (e.currentTarget.firstChild as HTMLElement).style.opacity = '1'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#1e293b'; (e.currentTarget.firstChild as HTMLElement).style.opacity = '0.3'; }}
+              >
+                <div style={{ width: 2, height: 32, borderRadius: 2, background: '#64748b', opacity: 0.3, transition: 'opacity 0.15s', pointerEvents: 'none' }} />
+              </div>
 
               {/* Preview pane */}
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
