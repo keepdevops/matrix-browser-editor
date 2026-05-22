@@ -10,7 +10,9 @@ import { useVisualEdit } from '../../hooks/useVisualEdit';
 import { AuditPanel } from './AuditPanel';
 import { InspectPanel } from './InspectPanel';
 import { PropControlsPanel } from './PropControlsPanel';
+import { ConsolePanel } from './ConsolePanel';
 import { AiDiffModal } from '../shared/AiDiffModal';
+import { useConsoleCapture } from '../../hooks/useConsoleCapture';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -43,7 +45,11 @@ export function PreviewPane() {
   const [splitView, setSplitView] = React.useState(false);
   const [themeCompare, setThemeCompare] = React.useState(false);
   const [autoScore, setAutoScore] = React.useState<number | null>(null);
+  const [showConsole, setShowConsole] = React.useState(false);
+  const { entries: consoleLogs, clear: clearConsole } = useConsoleCapture(true);
   const autoAuditTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => { clearConsole(); }, [code, clearConsole]);
 
   React.useEffect(() => {
     if (!code) { setAutoScore(null); return; }
@@ -135,6 +141,13 @@ export function PreviewPane() {
             style={{ ...BTN, color: inspectMode ? '#34d399' : '#94a3b8', borderColor: inspectMode ? '#059669' : '#334155', background: inspectMode ? 'rgba(16,185,129,0.12)' : '#1e293b' }}
           >
             🔎 Inspect
+          </button>
+          <button
+            onClick={() => setShowConsole(s => !s)}
+            title="Toggle console output"
+            style={{ ...BTN, color: showConsole ? '#a5b4fc' : consoleLogs.some(e => e.level === 'error') ? '#f87171' : consoleLogs.some(e => e.level === 'warn') ? '#fbbf24' : '#94a3b8', borderColor: showConsole ? '#4f46e5' : consoleLogs.some(e => e.level === 'error') ? '#991b1b' : '#334155', background: showConsole ? 'rgba(99,102,241,0.1)' : '#1e293b' }}
+          >
+            {'>'} Console{consoleLogs.length > 0 ? ` (${consoleLogs.length})` : ''}
           </button>
           <button
             onClick={() => audit(code)}
@@ -229,6 +242,8 @@ export function PreviewPane() {
           />
         )}
       </div>}
+
+      {showConsole && <ConsolePanel entries={consoleLogs} onClear={clearConsole} />}
 
       <PropControlsPanel onPropsChange={setPropOverrides} />
 

@@ -142,6 +142,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script>Babel.registerPreset('tsx',{presets:[[Babel.availablePresets['typescript'],{allExtensions:true,isTSX:true}],Babel.availablePresets['react']]});</script>
   <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}</style>
+  <script>${CONSOLE_SCRIPT}</script>
 </head>
 <body>
   <div id="root"></div>
@@ -154,6 +155,28 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 </body>
 </html>`;
 }
+
+export const CONSOLE_SCRIPT = `
+(function(){
+  var _send = function(level, args) {
+    var serialized = Array.from(args).map(function(a) {
+      try { return typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a); }
+      catch(e) { return String(a); }
+    });
+    window.parent.postMessage({ type: 'console', level: level, args: serialized }, '*');
+  };
+  ['log','warn','error','info'].forEach(function(level) {
+    var orig = console[level].bind(console);
+    console[level] = function() { orig.apply(console, arguments); _send(level, arguments); };
+  });
+  window.addEventListener('error', function(e) {
+    _send('error', [e.message + (e.filename ? ' (' + e.filename + ':' + e.lineno + ')' : '')]);
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    _send('error', ['Unhandled promise rejection: ' + String(e.reason)]);
+  });
+})();
+`;
 
 export const INSPECT_SCRIPT = `
 (function(){
