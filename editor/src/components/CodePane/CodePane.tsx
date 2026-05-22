@@ -24,6 +24,14 @@ import { ReviewPanel } from './ReviewPanel';
 import { DocsModal } from './DocsModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
 import { parseComponents, patchComponent } from '../../lib/parseComponents';
+import { useDraftAutosave, clearDraft } from '../../hooks/useDraftAutosave';
+
+function formatAge(ts: number): string {
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  return `${Math.floor(secs / 3600)}h ago`;
+}
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px', borderRadius: 6, background: '#1e293b',
@@ -78,6 +86,7 @@ export function CodePane() {
   const [showInject, setShowInject] = useState(false);
   const [injectPath, setInjectPath] = useState('');
   const [formatting, setFormatting] = useState(false);
+  const { pendingDraft, dismissDraft } = useDraftAutosave(code, componentName, language);
   const recentPaths: string[] = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('session-store') || '{}')?.state?.recentPaths ?? []; } catch { return []; }
   }, []);
@@ -123,7 +132,7 @@ export function CodePane() {
       if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
       if (e.key === 's') {
         e.preventDefault();
-        if (code.trim()) { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); }
+        if (code.trim()) { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }
       }
       if (e.key === 'p') { e.preventDefault(); handleFormat(); }
       if (e.key === 'd') { e.preventDefault(); toggleDiffMode(); }
@@ -166,6 +175,39 @@ export function CodePane() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a', position: 'relative' }}>
+
+      {/* Draft restore banner */}
+      {pendingDraft && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '5px 12px', background: '#1c1a09', borderBottom: '1px solid #854d0e',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 11, color: '#fbbf24' }}>
+            ⚡ Unsaved draft from {formatAge(pendingDraft.savedAt)} — <strong>{pendingDraft.componentName}</strong>
+          </span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => {
+                setCode(pendingDraft.code);
+                setComponentName(pendingDraft.componentName);
+                setLanguage(pendingDraft.language as 'tsx' | 'jsx' | 'ts' | 'js');
+                dismissDraft();
+              }}
+              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: '#854d0e', border: '1px solid #92400e', color: '#fef3c7', cursor: 'pointer' }}
+            >
+              Restore
+            </button>
+            <button
+              onClick={dismissDraft}
+              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'transparent', border: '1px solid #44371a', color: '#92400e', cursor: 'pointer' }}
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', borderBottom: '1px solid #1e293b', flexShrink: 0, gap: 4, overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', flexShrink: 0, marginRight: 4 }}>
@@ -185,7 +227,7 @@ export function CodePane() {
           <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
           <button onClick={toggleDiffMode} style={isDiffMode ? BTN_PRIMARY : BTN}>{isDiffMode ? 'Diff On' : 'Diff Off'}</button>
           <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
-          <button onClick={() => { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
+          <button onClick={() => { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
           <button
             onClick={async () => { const result = await share(); if (result) { setTimeout(dismissShare, 4000); } }}
             disabled={shareLoading || !code}
