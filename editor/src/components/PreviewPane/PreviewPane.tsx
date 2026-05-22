@@ -218,8 +218,6 @@ export function PreviewPane() {
         {inspectInfo && (
           <InspectPanel info={inspectInfo} onDismiss={dismissInspect} />
         )}
-      </div>
-
       </div>}
 
       <PropControlsPanel onPropsChange={setPropOverrides} />
