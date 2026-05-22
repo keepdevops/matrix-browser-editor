@@ -10,7 +10,7 @@ import { StatusBadge } from '../shared/StatusBadge';
 const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
 export function ChatPane() {
-  const { messages, isStreaming, streamBuffer, error, clearMessages } = useAgentStore();
+  const { messages, isStreaming, streamBuffer, error, clearMessages, lastComponent } = useAgentStore();
   const { activeTemplate, pendingScreenshot, setPendingScreenshot, pendingChatMessage, setPendingChatMessage } = useSessionStore();
   const { code, componentName } = useEditorStore();
   const { send } = useAgentStream();
@@ -95,6 +95,7 @@ export function ChatPane() {
         streamBuffer={streamBuffer}
         isStreaming={isStreaming}
         error={error}
+        lastComponent={lastComponent}
         onSuggestion={(text) => handleSend(text)}
       />
 
