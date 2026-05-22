@@ -137,12 +137,12 @@ export function CodePane() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a', position: 'relative' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #1e293b', flexShrink: 0, gap: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', flexShrink: 0 }}>
-          CODE — <span style={{ color: '#6366f1' }}>{componentName}.{language}</span>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', borderBottom: '1px solid #1e293b', flexShrink: 0, gap: 4, overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', flexShrink: 0, marginRight: 4 }}>
+          <span style={{ color: '#6366f1' }}>{componentName}.{language}</span>
         </span>
         {status !== 'idle' && (
-          <span style={{ fontSize: 11, color: statusColor, flex: 1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 11, color: statusColor, flexShrink: 0, whiteSpace: 'nowrap', marginRight: 4 }}>
             {status === 'loading' ? '⏳ ' : status === 'success' ? '✓ ' : '✗ '}{message}
           </span>
         )}

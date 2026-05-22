@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatPane } from './components/ChatPane/ChatPane';
 import { PreviewPane } from './components/PreviewPane/PreviewPane';
 import { CodePane } from './components/CodePane/CodePane';
@@ -39,8 +39,25 @@ export default function App() {
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [canvasMode, setCanvasMode] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [splitPct, setSplitPct] = useState(50);
+  const dragging = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const toggle = (d: Drawer) => setDrawer(prev => prev === d ? null : d);
+
+  const onDividerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const pct = Math.min(80, Math.max(20, ((ev.clientX - rect.left) / rect.width) * 100));
+      setSplitPct(pct);
+    };
+    const onUp = () => { dragging.current = false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -151,20 +168,25 @@ export default function App() {
         </div>
 
         {/* Main content */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+        <div ref={containerRef} style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
           {canvasMode ? (
             <CanvasPane />
           ) : (
             <>
-              {/* Code pane — left half */}
-              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              {/* Code pane */}
+              <div style={{ width: `${splitPct}%`, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0, flexShrink: 0 }}>
                 <CodePane />
               </div>
 
-              {/* Divider */}
-              <div style={{ width: 4, background: '#1e293b', flexShrink: 0, cursor: 'col-resize' }} />
+              {/* Draggable divider */}
+              <div
+                onMouseDown={onDividerMouseDown}
+                style={{ width: 5, background: '#1e293b', flexShrink: 0, cursor: 'col-resize', transition: 'background 0.1s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#4f46e5')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#1e293b')}
+              />
 
-              {/* Preview pane — right half */}
+              {/* Preview pane */}
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <PreviewPane />
               </div>
