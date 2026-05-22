@@ -3,6 +3,7 @@ import { useAgentStore } from '../store/agentStore';
 import { useEditorStore } from '../store/editorStore';
 import { useSessionStore } from '../store/sessionStore';
 import { useFileTabStore } from '../store/fileTabStore';
+import { useHistoryStore } from '../store/historyStore';
 
 const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -17,6 +18,7 @@ export function useAgentStream() {
   const { code: currentCode, setCode, setComponentName, setLanguage } = useEditorStore();
   const { styleSystem, theme, setRightTab } = useSessionStore();
   const { openTab, tabs, activeTabId, setActiveTab } = useFileTabStore();
+  const { push: pushHistory } = useHistoryStore();
 
   const send = useCallback(async ({ prompt, templateCode, screenshotImage }: StreamOptions) => {
     addUserMessage(prompt);
@@ -98,6 +100,7 @@ export function useAgentStream() {
 
   const confirmPending = useCallback(() => {
     if (!pending) return;
+    pushHistory({ code: pending.newCode, componentName: pending.componentName, language: pending.language, timestamp: Date.now(), source: 'ai' });
     setCode(pending.newCode);
     setComponentName(pending.componentName);
     setLanguage(pending.language as 'tsx' | 'jsx' | 'ts' | 'js');
@@ -110,7 +113,7 @@ export function useAgentStream() {
       else { openTab({ name: pending.componentName, code: pending.newCode, language: pending.language as 'tsx' | 'jsx' | 'ts' | 'js' }); }
     }
     setPending(null);
-  }, [pending, setCode, setComponentName, setLanguage, tabs, activeTabId, setActiveTab, openTab, setPending]);
+  }, [pending, pushHistory, setCode, setComponentName, setLanguage, tabs, activeTabId, setActiveTab, openTab, setPending]);
 
   const rejectPending = useCallback(() => setPending(null), [setPending]);
 

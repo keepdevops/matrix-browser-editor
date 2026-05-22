@@ -23,6 +23,8 @@ import { RefactorMenu } from './RefactorMenu';
 import { ReviewPanel } from './ReviewPanel';
 import { DocsModal } from './DocsModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
+import { VersionHistoryPanel } from './VersionHistoryPanel';
+import { useHistoryStore } from '../../store/historyStore';
 import { parseComponents, patchComponent } from '../../lib/parseComponents';
 import { useDraftAutosave, clearDraft } from '../../hooks/useDraftAutosave';
 
@@ -74,7 +76,9 @@ export function CodePane() {
   const { loading: docsLoading, docs, generateDocs, clear: clearDocs } = useDocs();
   const { loading: storiesLoading, exportStories } = useStorybookExport();
   const [showDocsModal, setShowDocsModal] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [embedSnippet, setEmbedSnippet] = useState<string | null>(null);
+  const { push: pushHistory } = useHistoryStore();
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -132,14 +136,14 @@ export function CodePane() {
       if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
       if (e.key === 's') {
         e.preventDefault();
-        if (code.trim()) { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }
+        if (code.trim()) { pushHistory({ code, componentName, language, timestamp: Date.now(), source: 'save' }); saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }
       }
       if (e.key === 'p') { e.preventDefault(); handleFormat(); }
       if (e.key === 'd') { e.preventDefault(); toggleDiffMode(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, code, componentName, language, lastComponent, saveToLibrary, markSaved, handleFormat, toggleDiffMode]);
+  }, [undo, redo, code, componentName, language, lastComponent, pushHistory, saveToLibrary, markSaved, handleFormat, toggleDiffMode]);
 
   const handleExport = async () => {
     try { await exportComponent(targetProjectPath || undefined); setTimeout(reset, 3000); }
@@ -226,8 +230,9 @@ export function CodePane() {
           <button onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Shift+Z)" style={{ ...BTN, opacity: historyIndex >= history.length - 1 ? 0.35 : 1, padding: '3px 7px' }}>↪</button>
           <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
           <button onClick={toggleDiffMode} style={isDiffMode ? BTN_PRIMARY : BTN}>{isDiffMode ? 'Diff On' : 'Diff Off'}</button>
+          <button onClick={() => setShowHistory(h => !h)} title="Version history" style={{ ...BTN, color: showHistory ? '#a5b4fc' : '#94a3b8', borderColor: showHistory ? '#4f46e5' : '#334155', background: showHistory ? 'rgba(99,102,241,0.15)' : '#1e293b' }}>⏱ History</button>
           <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
-          <button onClick={() => { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
+          <button onClick={() => { pushHistory({ code, componentName, language, timestamp: Date.now(), source: 'save' }); saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
           <button
             onClick={async () => { const result = await share(); if (result) { setTimeout(dismissShare, 4000); } }}
             disabled={shareLoading || !code}
@@ -283,6 +288,8 @@ export function CodePane() {
             options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', wordWrap: 'on', scrollBeyondLastLine: false, formatOnPaste: true }}
           />
         )}
+
+        {showHistory && <VersionHistoryPanel onClose={() => setShowHistory(false)} />}
 
         {/* Inline edit toolbar */}
         {inlineEdit.visible && (
