@@ -176,6 +176,7 @@ export const INSPECT_SCRIPT = `
         classes: Array.from(el.classList),
         styles: styles,
         text: (el.textContent || '').slice(0,80).trim(),
+        outerHTML: el.outerHTML.slice(0, 500),
         rect: { width: Math.round(rect.width), height: Math.round(rect.height) }
       }
     },'*');

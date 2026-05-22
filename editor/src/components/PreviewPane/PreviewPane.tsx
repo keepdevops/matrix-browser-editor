@@ -6,6 +6,7 @@ import { useAgentStore } from '../../store/agentStore';
 import { useEditorStore } from '../../store/editorStore';
 import { useAudit } from '../../hooks/useAudit';
 import { useInspect } from '../../hooks/useInspect';
+import { useVisualEdit } from '../../hooks/useVisualEdit';
 import { AuditPanel } from './AuditPanel';
 import { InspectPanel } from './InspectPanel';
 import { PropControlsPanel } from './PropControlsPanel';
@@ -32,10 +33,11 @@ export function PreviewPane() {
   const { iframeRef, splitRef } = usePreview(inspectMode, propOverrides);
   const { theme, setTheme, setPendingScreenshot, styleSystem } = useSessionStore();
   const { isStreaming } = useAgentStore();
-  const { code } = useEditorStore();
+  const { code, setCode } = useEditorStore();
   const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
   const { issues, loading: auditLoading, error: auditError, ran: auditRan, audit, clear: clearAudit } = useAudit();
   const { info: inspectInfo, dismiss: dismissInspect } = useInspect(inspectMode);
+  const { loading: visualEditLoading, apply: applyVisualEdit } = useVisualEdit();
   const [viewportWidth, setViewportWidth] = React.useState(0);
   const [splitView, setSplitView] = React.useState(false);
   const [themeCompare, setThemeCompare] = React.useState(false);
@@ -216,7 +218,15 @@ export function PreviewPane() {
         </div>
 
         {inspectInfo && (
-          <InspectPanel info={inspectInfo} onDismiss={dismissInspect} />
+          <InspectPanel
+            info={inspectInfo}
+            onDismiss={dismissInspect}
+            applying={visualEditLoading}
+            onApplyEdit={async (outerHTML, instruction) => {
+              const updated = await applyVisualEdit(code, outerHTML, instruction);
+              if (updated) { setCode(updated); dismissInspect(); }
+            }}
+          />
         )}
       </div>}
 

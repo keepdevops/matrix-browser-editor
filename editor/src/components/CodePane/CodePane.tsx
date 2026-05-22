@@ -72,6 +72,8 @@ export function CodePane() {
   const { uploading, uploadAndInsert } = useImageUpload(editorRef);
   const { inlineEdit, instruction, setInstruction, apply, dismiss, loading: inlineLoading, onSelectionChange } = useInlineEdit(editorRef);
 
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteVal, setPasteVal] = useState('');
   const [showInject, setShowInject] = useState(false);
   const [injectPath, setInjectPath] = useState('');
   const [formatting, setFormatting] = useState(false);
@@ -124,6 +126,15 @@ export function CodePane() {
     catch { setTimeout(reset, 4000); }
   };
 
+  const handleLoadPasted = (val: string) => {
+    if (!val.trim()) return;
+    const nameMatch = val.match(/export\s+(?:default\s+)?(?:function|class|const)\s+([A-Z][A-Za-z0-9_]*)/);
+    const name = nameMatch?.[1] ?? 'PastedComponent';
+    setCode(val.trim());
+    setComponentName(name);
+    setLanguage('tsx');
+  };
+
   const handleNewFile = () => {
     const id = openTab({ name: 'Untitled', code: '', language: 'tsx' });
     setActiveTab(id);
@@ -148,6 +159,7 @@ export function CodePane() {
         )}
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
           <button onClick={handleNewFile} title="New blank file" style={BTN}>+ New</button>
+          <button onClick={() => { setPasteVal(''); setShowPaste(true); }} title="Paste a React component" style={{ ...BTN, color: '#7dd3fc', borderColor: '#1d4ed8' }}>📋 Paste</button>
           <button onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)" style={{ ...BTN, opacity: historyIndex <= 0 ? 0.35 : 1, padding: '3px 7px' }}>↩</button>
           <button onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Shift+Z)" style={{ ...BTN, opacity: historyIndex >= history.length - 1 ? 0.35 : 1, padding: '3px 7px' }}>↪</button>
           <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
@@ -248,6 +260,35 @@ export function CodePane() {
             <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
               <button onClick={() => setShowInject(false)} style={BTN}>Cancel</button>
               <button onClick={handleInject} disabled={!injectPath.trim()} style={{ ...BTN_PRIMARY, opacity: injectPath.trim() ? 1 : 0.5 }}>Inject</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paste Component Modal */}
+      {showPaste && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 24, width: 640, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>PASTE REACT COMPONENT</span>
+              <button onClick={() => setShowPaste(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16 }}>✕</button>
+            </div>
+            <textarea
+              autoFocus
+              value={pasteVal}
+              onChange={e => setPasteVal(e.target.value)}
+              placeholder="Paste your React component code here…"
+              style={{ height: 320, background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#f1f5f9', fontSize: 12, padding: 12, fontFamily: 'monospace', resize: 'vertical', outline: 'none' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowPaste(false)} style={BTN}>Cancel</button>
+              <button
+                onClick={() => { handleLoadPasted(pasteVal); setShowPaste(false); }}
+                disabled={!pasteVal.trim()}
+                style={{ ...BTN_PRIMARY, opacity: pasteVal.trim() ? 1 : 0.5 }}
+              >
+                Load Component
+              </button>
             </div>
           </div>
         </div>

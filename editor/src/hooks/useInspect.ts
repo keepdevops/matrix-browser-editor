@@ -7,6 +7,7 @@ export interface InspectInfo {
   classes: string[];
   styles: Record<string, string>;
   text: string;
+  outerHTML: string;
   rect: { width: number; height: number };
 }
 
