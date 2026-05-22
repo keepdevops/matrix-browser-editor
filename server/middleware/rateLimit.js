@@ -1,15 +1,24 @@
 'use strict';
 
 // Simple sliding-window rate limiter — no external deps.
-// Tracks request timestamps per IP in a Map; evicts old entries on each check.
-
-const windows = new Map(); // ip → number[]
+// Each call to rateLimit() creates an independent window Map so different
+// limits on different routes don't share state.
 
 /**
- * @param {number} max   max requests allowed in the window
- * @param {number} windowMs  window size in milliseconds
+ * @param {number} max      max requests allowed in the window
+ * @param {number} windowMs window size in milliseconds
  */
 function rateLimit(max, windowMs) {
+  const windows = new Map(); // ip → number[]  — one Map per limiter instance
+
+  // Periodically evict IPs with no recent activity
+  setInterval(() => {
+    const cutoff = Date.now() - windowMs;
+    for (const [ip, hits] of windows) {
+      if (!hits.some(t => t > cutoff)) windows.delete(ip);
+    }
+  }, windowMs);
+
   return function rateLimitMiddleware(req, res, next) {
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
     const now = Date.now();
@@ -29,13 +38,5 @@ function rateLimit(max, windowMs) {
     next();
   };
 }
-
-// Periodically clear IPs with no recent activity to prevent memory growth
-setInterval(() => {
-  const cutoff = Date.now() - 60_000;
-  for (const [ip, hits] of windows) {
-    if (!hits.some(t => t > cutoff)) windows.delete(ip);
-  }
-}, 60_000);
 
 module.exports = { rateLimit };
