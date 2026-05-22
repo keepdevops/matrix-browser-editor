@@ -22,6 +22,7 @@ import { FileTabs } from './FileTabs';
 import { RefactorMenu } from './RefactorMenu';
 import { ReviewPanel } from './ReviewPanel';
 import { DocsModal } from './DocsModal';
+import { AiDiffModal } from '../shared/AiDiffModal';
 import { parseComponents, patchComponent } from '../../lib/parseComponents';
 
 const BTN: React.CSSProperties = {
@@ -56,7 +57,7 @@ export function CodePane() {
   const { lastComponent } = useAgentStore();
   const { updateActiveCode, openTab, setActiveTab } = useFileTabStore();
   const { status, message, exportComponent, injectIntoFile, reset } = useConnector();
-  const { send: sendRefactor } = useAgentStream();
+  const { send: sendRefactor, pending: agentPending, confirmPending: confirmAgent, rejectPending: rejectAgent } = useAgentStream();
   const { loading: shareLoading, shareId, share, dismiss: dismissShare } = useShare();
   const { loading: zipLoading, exportZip } = useExportZip();
   const { loading: gistLoading, createGist } = useGist();
@@ -70,7 +71,7 @@ export function CodePane() {
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const { uploading, uploadAndInsert } = useImageUpload(editorRef);
-  const { inlineEdit, instruction, setInstruction, apply, dismiss, loading: inlineLoading, onSelectionChange } = useInlineEdit(editorRef);
+  const { inlineEdit, instruction, setInstruction, apply, dismiss, loading: inlineLoading, onSelectionChange, pending: inlinePending, confirmPending: confirmInline, rejectPending: rejectInline } = useInlineEdit(editorRef);
 
   const [showPaste, setShowPaste] = useState(false);
   const [pasteVal, setPasteVal] = useState('');
@@ -304,6 +305,28 @@ export function CodePane() {
             </div>
           </div>
         </div>
+      )}
+
+      {inlinePending && (
+        <AiDiffModal
+          label="inline edit"
+          oldCode={inlinePending.oldCode}
+          newCode={inlinePending.newCode}
+          language={language}
+          onAccept={confirmInline}
+          onReject={rejectInline}
+        />
+      )}
+
+      {agentPending && (
+        <AiDiffModal
+          label={agentPending.componentName}
+          oldCode={agentPending.oldCode}
+          newCode={agentPending.newCode}
+          language={agentPending.language}
+          onAccept={confirmAgent}
+          onReject={rejectAgent}
+        />
       )}
     </div>
   );

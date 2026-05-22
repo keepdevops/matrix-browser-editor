@@ -11,10 +11,18 @@ interface InlineEditState {
   selection: Monaco.Selection | null;
 }
 
+interface PendingEdit {
+  oldCode: string;
+  newCode: string;
+  selection: Monaco.Selection;
+  replacement: string;
+}
+
 export function useInlineEdit(editorRef: React.MutableRefObject<Monaco.editor.IStandaloneCodeEditor | null>) {
   const [state, setState] = useState<InlineEditState>({ visible: false, top: 0, left: 0, selectedText: '', selection: null });
   const [instruction, setInstruction] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingEdit | null>(null);
 
   const onSelectionChange = useCallback(() => {
     const editor = editorRef.current;
@@ -43,7 +51,12 @@ export function useInlineEdit(editorRef: React.MutableRefObject<Monaco.editor.IS
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { replacement } = await res.json();
-      editor.executeEdits('inline-edit', [{ range: state.selection, text: replacement }]);
+      const oldCode = editor.getValue();
+      const model = editor.getModel()!;
+      const startOffset = model.getOffsetAt({ lineNumber: state.selection!.startLineNumber, column: state.selection!.startColumn });
+      const endOffset = model.getOffsetAt({ lineNumber: state.selection!.endLineNumber, column: state.selection!.endColumn });
+      const newCode = oldCode.slice(0, startOffset) + replacement + oldCode.slice(endOffset);
+      setPending({ oldCode, newCode, selection: state.selection!, replacement });
       setState(s => ({ ...s, visible: false }));
       setInstruction('');
     } catch (err) {
@@ -53,7 +66,17 @@ export function useInlineEdit(editorRef: React.MutableRefObject<Monaco.editor.IS
     }
   }, [instruction, state, editorRef]);
 
+  const confirmPending = useCallback(() => {
+    if (!pending) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.executeEdits('inline-edit', [{ range: pending.selection, text: pending.replacement }]);
+    setPending(null);
+  }, [pending, editorRef]);
+
+  const rejectPending = useCallback(() => setPending(null), []);
+
   const dismiss = useCallback(() => setState(s => ({ ...s, visible: false })), []);
 
-  return { inlineEdit: state, instruction, setInstruction, apply, dismiss, loading, onSelectionChange };
+  return { inlineEdit: state, instruction, setInstruction, apply, dismiss, loading, onSelectionChange, pending, confirmPending, rejectPending };
 }

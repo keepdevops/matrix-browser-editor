@@ -2,12 +2,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AgentMessage, ParsedComponent } from '../lib/schemas';
 
+export interface AgentPendingEdit {
+  oldCode: string;
+  newCode: string;
+  componentName: string;
+  language: string;
+}
+
 interface AgentState {
   messages: AgentMessage[];
   isStreaming: boolean;
   streamBuffer: string;
   lastComponent: ParsedComponent | null;
   error: string | null;
+  pendingEdit: AgentPendingEdit | null;
 
   addUserMessage: (content: string) => void;
   startAssistantStream: () => void;
@@ -17,6 +25,7 @@ interface AgentState {
   setError: (error: string) => void;
   clearError: () => void;
   clearMessages: () => void;
+  setPendingEdit: (edit: AgentPendingEdit | null) => void;
 }
 
 function extractCodeField(raw: string): { withoutCode: string; code: string } | null {
@@ -139,6 +148,7 @@ export const useAgentStore = create<AgentState>()(persist((set, get) => ({
   streamBuffer: '',
   lastComponent: null,
   error: null,
+  pendingEdit: null,
 
   addUserMessage: (content) => set((s) => ({
     messages: [...s.messages, { role: 'user', content, timestamp: Date.now() }],
@@ -181,6 +191,8 @@ export const useAgentStore = create<AgentState>()(persist((set, get) => ({
   clearError: () => set({ error: null }),
 
   clearMessages: () => set({ messages: [], lastComponent: null, error: null }),
+
+  setPendingEdit: (edit) => set({ pendingEdit: edit }),
 }), {
   name: 'agent-store',
   partialize: (s) => ({ messages: s.messages, lastComponent: s.lastComponent }),

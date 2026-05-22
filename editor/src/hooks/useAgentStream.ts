@@ -13,8 +13,8 @@ interface StreamOptions {
 }
 
 export function useAgentStream() {
-  const { addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, messages } = useAgentStore();
-  const { setCode, setComponentName, setLanguage } = useEditorStore();
+  const { addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, messages, pendingEdit: pending, setPendingEdit: setPending } = useAgentStore();
+  const { code: currentCode, setCode, setComponentName, setLanguage } = useEditorStore();
   const { styleSystem, theme, setRightTab } = useSessionStore();
   const { openTab, tabs, activeTabId, setActiveTab } = useFileTabStore();
 
@@ -70,19 +70,13 @@ export function useAgentStream() {
               finalizeStream(event.content || fullContent);
               const component = useAgentStore.getState().lastComponent;
               if (component) {
-                setCode(component.code);
-                setComponentName(component.componentName);
-                setLanguage(component.language as 'tsx' | 'jsx' | 'ts' | 'js');
+                setPending({
+                  oldCode: useEditorStore.getState().code,
+                  newCode: component.code,
+                  componentName: component.componentName,
+                  language: component.language,
+                });
                 setRightTab('code');
-                // Update active tab or open a new one if name differs
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                if (activeTab && activeTab.name === component.componentName) {
-                  // already on the right tab — code syncs via updateActiveCode in CodePane
-                } else {
-                  const existing = tabs.find(t => t.name === component.componentName);
-                  if (existing) { setActiveTab(existing.id); }
-                  else { openTab({ name: component.componentName, code: component.code, language: component.language as 'tsx' | 'jsx' | 'ts' | 'js' }); }
-                }
               }
               return;
             } else if (event.type === 'error') {
@@ -100,7 +94,25 @@ export function useAgentStream() {
       console.error('[useAgentStream] error:', message);
       setError(message);
     }
-  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, setRightTab, styleSystem, theme, messages]);
+  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, setRightTab, styleSystem, theme, messages, setPending]);
 
-  return { send };
+  const confirmPending = useCallback(() => {
+    if (!pending) return;
+    setCode(pending.newCode);
+    setComponentName(pending.componentName);
+    setLanguage(pending.language as 'tsx' | 'jsx' | 'ts' | 'js');
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    if (activeTab && activeTab.name === pending.componentName) {
+      // already on right tab
+    } else {
+      const existing = tabs.find(t => t.name === pending.componentName);
+      if (existing) { setActiveTab(existing.id); }
+      else { openTab({ name: pending.componentName, code: pending.newCode, language: pending.language as 'tsx' | 'jsx' | 'ts' | 'js' }); }
+    }
+    setPending(null);
+  }, [pending, setCode, setComponentName, setLanguage, tabs, activeTabId, setActiveTab, openTab, setPending]);
+
+  const rejectPending = useCallback(() => setPending(null), [setPending]);
+
+  return { send, pending, confirmPending, rejectPending };
 }

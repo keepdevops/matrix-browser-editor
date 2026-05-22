@@ -107,6 +107,7 @@ export function ChatPane() {
         initialValue={pendingChatMessage}
         onInitialValueConsumed={() => setPendingChatMessage(null)}
       />
+
     </div>
   );
 }

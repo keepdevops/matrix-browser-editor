@@ -10,6 +10,7 @@ import { useVisualEdit } from '../../hooks/useVisualEdit';
 import { AuditPanel } from './AuditPanel';
 import { InspectPanel } from './InspectPanel';
 import { PropControlsPanel } from './PropControlsPanel';
+import { AiDiffModal } from '../shared/AiDiffModal';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -37,7 +38,7 @@ export function PreviewPane() {
   const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
   const { issues, loading: auditLoading, error: auditError, ran: auditRan, audit, clear: clearAudit } = useAudit();
   const { info: inspectInfo, dismiss: dismissInspect } = useInspect(inspectMode);
-  const { loading: visualEditLoading, apply: applyVisualEdit } = useVisualEdit();
+  const { loading: visualEditLoading, apply: applyVisualEdit, pending: visualPending, confirmPending: confirmVisual, rejectPending: rejectVisual } = useVisualEdit();
   const [viewportWidth, setViewportWidth] = React.useState(0);
   const [splitView, setSplitView] = React.useState(false);
   const [themeCompare, setThemeCompare] = React.useState(false);
@@ -223,8 +224,7 @@ export function PreviewPane() {
             onDismiss={dismissInspect}
             applying={visualEditLoading}
             onApplyEdit={async (outerHTML, instruction) => {
-              const updated = await applyVisualEdit(code, outerHTML, instruction);
-              if (updated) { setCode(updated); dismissInspect(); }
+              await applyVisualEdit(code, outerHTML, instruction);
             }}
           />
         )}
@@ -309,6 +309,16 @@ export function PreviewPane() {
             )}
           </div>
         </div>
+      )}
+
+      {visualPending && (
+        <AiDiffModal
+          label="visual edit"
+          oldCode={visualPending.oldCode}
+          newCode={visualPending.newCode}
+          onAccept={() => { confirmVisual(setCode); dismissInspect(); }}
+          onReject={rejectVisual}
+        />
       )}
     </div>
   );
