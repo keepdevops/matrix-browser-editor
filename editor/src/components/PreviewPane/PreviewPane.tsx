@@ -47,6 +47,7 @@ export function PreviewPane() {
   const [zoom, setZoom] = React.useState(100);
   const [showFrame, setShowFrame] = React.useState(false);
   const [splitView, setSplitView] = React.useState(false);
+  const [previewBg, setPreviewBg] = React.useState<'dark' | 'light' | 'checker'>('dark');
   const [themeCompare, setThemeCompare] = React.useState(false);
   const [autoScore, setAutoScore] = React.useState<number | null>(null);
   const [showConsole, setShowConsole] = React.useState(false);
@@ -77,6 +78,10 @@ export function PreviewPane() {
       } catch { /* silent — background audit */ }
     }, 2000);
   }, [code]);
+
+  const bgStyle: React.CSSProperties = previewBg === 'checker'
+    ? { backgroundImage: 'repeating-conic-gradient(#334155 0% 25%, #1e293b 0% 50%)', backgroundSize: '16px 16px' }
+    : { background: previewBg === 'light' ? '#f8fafc' : '#0f172a' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
@@ -203,6 +208,13 @@ export function PreviewPane() {
           >
             {theme === 'dark' ? '☀ Light' : '☾ Dark'}
           </button>
+          <button
+            onClick={() => setPreviewBg(bg => bg === 'dark' ? 'light' : bg === 'light' ? 'checker' : 'dark')}
+            title={`Preview background: ${previewBg} (click to cycle)`}
+            style={{ ...BTN, fontFamily: 'monospace', fontSize: 11 }}
+          >
+            {previewBg === 'dark' ? '▪ Bg' : previewBg === 'light' ? '□ Bg' : '⊞ Bg'}
+          </button>
         </div>
       </div>
 
@@ -241,7 +253,7 @@ export function PreviewPane() {
               ref={splitRef}
               title="Mobile Preview"
               sandbox="allow-scripts"
-              style={{ flex: 1, width: '100%', border: 'none', background: theme === 'dark' ? '#0f172a' : '#f8fafc' }}
+              style={{ flex: 1, width: '100%', border: 'none', ...bgStyle }}
             />
           </div>
         )}
@@ -254,7 +266,7 @@ export function PreviewPane() {
                   ref={iframeRef}
                   title="Component Preview"
                   sandbox="allow-scripts"
-                  style={{ width: viewportWidth, height: 667, border: 'none', display: 'block', background: theme === 'dark' ? '#0f172a' : '#f8fafc', cursor: inspectMode ? 'crosshair' : undefined }}
+                  style={{ width: viewportWidth, height: 667, border: 'none', display: 'block', ...bgStyle, cursor: inspectMode ? 'crosshair' : undefined }}
                 />
               </DeviceFrame>
             </div>
@@ -276,7 +288,7 @@ export function PreviewPane() {
                   minHeight: splitView ? undefined : '100%',
                   border: (!splitView && viewportWidth > 0) ? '1px solid #334155' : 'none',
                   borderTop: 'none',
-                  background: theme === 'dark' ? '#0f172a' : '#f8fafc',
+                  ...bgStyle,
                   flexShrink: 0,
                   cursor: inspectMode ? 'crosshair' : undefined,
                 }}
