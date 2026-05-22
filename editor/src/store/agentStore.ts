@@ -7,6 +7,7 @@ export interface AgentPendingEdit {
   newCode: string;
   componentName: string;
   language: string;
+  prompt?: string;
 }
 
 interface AgentState {

@@ -77,6 +77,7 @@ export function useAgentStream() {
                   newCode: component.code,
                   componentName: component.componentName,
                   language: component.language,
+                  prompt,
                 });
                 setRightTab('code');
               }
@@ -100,7 +101,7 @@ export function useAgentStream() {
 
   const confirmPending = useCallback(() => {
     if (!pending) return;
-    pushHistory({ code: pending.newCode, componentName: pending.componentName, language: pending.language, timestamp: Date.now(), source: 'ai' });
+    pushHistory({ code: pending.newCode, componentName: pending.componentName, language: pending.language, timestamp: Date.now(), source: 'ai', label: pending.prompt });
     setCode(pending.newCode);
     setComponentName(pending.componentName);
     setLanguage(pending.language as 'tsx' | 'jsx' | 'ts' | 'js');

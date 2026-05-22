@@ -87,11 +87,11 @@ export function VersionHistoryPanel({ onClose }: Props) {
                 </span>
                 <span style={{ fontSize: 10, color: '#475569' }}>{timeAgo(entry.timestamp)}</span>
               </div>
-              <div style={{ fontSize: 11, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {entry.label ?? entry.componentName}
+              <div style={{ fontSize: 11, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.label ?? entry.componentName}>
+                {entry.label ? entry.label.slice(0, 60) + (entry.label.length > 60 ? '…' : '') : entry.componentName}
               </div>
-              <div style={{ fontSize: 10, color: '#334155', marginTop: 1 }}>
-                {entry.code.split('\n').length} lines · {entry.language}
+              <div style={{ fontSize: 10, color: '#475569', marginTop: 1 }}>
+                {entry.componentName} · {entry.code.split('\n').length} lines · {entry.language}
               </div>
             </div>
             <button
