@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useTokenStore, TOKEN_DEFAULTS, TOKEN_LIGHT, GOOGLE_FONTS, applyTokens, type TokenValues } from '../../store/tokenStore';
 import { useEditorStore } from '../../store/editorStore';
+import { usePalette } from '../../hooks/usePalette';
 import { CSSVarEditor } from './CSSVarEditor';
 
 const COLORS: { key: keyof TokenValues; label: string }[] = [
@@ -51,6 +53,8 @@ function OptionRow({ label, value, options, onChange }: {
 export function TokensPanel() {
   const { tokens, setToken, resetTokens } = useTokenStore();
   const { code, setCode } = useEditorStore();
+  const { loading: paletteLoading, generate: generatePalette } = usePalette();
+  const [paletteDesc, setPaletteDesc] = useState('');
 
   const handleChange = (key: keyof TokenValues, value: string) => {
     setToken(key, value);
@@ -88,6 +92,35 @@ export function TokensPanel() {
         >
           ☀ Light
         </button>
+      </div>
+
+      {/* AI Palette Generator */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>AI Palette</div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            value={paletteDesc}
+            onChange={e => setPaletteDesc(e.target.value)}
+            onKeyDown={async e => {
+              if (e.key === 'Enter' && paletteDesc.trim()) {
+                const colors = await generatePalette(paletteDesc.trim());
+                if (colors) Object.entries(colors).forEach(([k, v]) => handleChange(k as keyof TokenValues, v as string));
+              }
+            }}
+            placeholder="ocean sunset, forest night…"
+            style={{ flex: 1, background: '#1e293b', border: '1px solid #334155', borderRadius: 5, padding: '4px 8px', color: '#f1f5f9', fontSize: 11, outline: 'none' }}
+          />
+          <button
+            disabled={paletteLoading || !paletteDesc.trim()}
+            onClick={async () => {
+              const colors = await generatePalette(paletteDesc.trim());
+              if (colors) Object.entries(colors).forEach(([k, v]) => handleChange(k as keyof TokenValues, v as string));
+            }}
+            style={{ ...BTN, opacity: paletteLoading || !paletteDesc.trim() ? 0.5 : 1, color: '#a5b4fc' }}
+          >
+            {paletteLoading ? '⏳' : 'Gen'}
+          </button>
+        </div>
       </div>
 
       {/* Colors */}

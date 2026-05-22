@@ -3,6 +3,8 @@ import { useEditorStore } from '../store/editorStore';
 import { useSessionStore } from '../store/sessionStore';
 import { buildSrcdoc, INSPECT_SCRIPT } from './useBuildSrcdoc';
 
+export { buildSrcdoc as buildSrcdocForTheme };
+
 export function usePreview(inspectMode = false, extraProps?: Record<string, unknown>) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const splitRef = useRef<HTMLIFrameElement>(null);

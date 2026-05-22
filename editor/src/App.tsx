@@ -5,113 +5,173 @@ import { CodePane } from './components/CodePane/CodePane';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { CanvasPane } from './components/CanvasPane/CanvasPane';
 import { KeyboardHelpModal } from './components/shared/KeyboardHelpModal';
-import { useSessionStore } from './store/sessionStore';
 
-const TAB_BTN = (active: boolean): React.CSSProperties => ({
-  padding: '6px 16px',
+const TOP_H = 44;
+
+const NAV_BTN = (active = false): React.CSSProperties => ({
+  padding: '5px 12px',
   background: active ? '#1e293b' : 'transparent',
   border: 'none',
-  borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+  borderRadius: 6,
   color: active ? '#f1f5f9' : '#475569',
   cursor: 'pointer',
   fontSize: 12,
   fontWeight: active ? 600 : 400,
-  letterSpacing: '0.04em',
-  transition: 'all 0.12s',
   whiteSpace: 'nowrap' as const,
+  letterSpacing: '0.03em',
+  transition: 'all 0.12s',
 });
 
-const COLLAPSE_BTN: React.CSSProperties = {
-  padding: '3px 8px', borderRadius: 4, background: 'transparent',
-  border: '1px solid #1e293b', color: '#475569', cursor: 'pointer', fontSize: 11,
+const ICON_BTN: React.CSSProperties = {
+  padding: '5px 10px',
+  background: 'transparent',
+  border: 'none',
+  color: '#475569',
+  cursor: 'pointer',
+  fontSize: 15,
+  borderRadius: 6,
+  lineHeight: 1,
 };
 
+type Drawer = 'sidebar' | 'chat' | null;
+
 export default function App() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [drawer, setDrawer] = useState<Drawer>(null);
+  const [canvasMode, setCanvasMode] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const { rightTab, setRightTab } = useSessionStore();
+
+  const toggle = (d: Drawer) => setDrawer(prev => prev === d ? null : d);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === '?') setShowHelp(h => !h);
+      if (e.key === 'Escape') setDrawer(null);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const sidebarWidth = sidebarCollapsed ? 44 : 200;
-  const chatWidth = chatCollapsed ? 44 : 320;
-
   return (
     <>
-    {showHelp && <KeyboardHelpModal onClose={() => setShowHelp(false)} />}
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: `${sidebarWidth}px ${chatWidth}px 1fr`,
-      gridTemplateRows: '100vh',
-      height: '100vh',
-      overflow: 'hidden',
-      background: '#0f172a',
-      color: '#f1f5f9',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      transition: 'grid-template-columns 0.15s',
-    }}>
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(c => !c)} />
+      {showHelp && <KeyboardHelpModal onClose={() => setShowHelp(false)} />}
 
-      <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e293b' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: chatCollapsed ? 'center' : 'flex-end', padding: '4px 6px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
-          <button onClick={() => setChatCollapsed(c => !c)} style={COLLAPSE_BTN} title={chatCollapsed ? 'Show chat' : 'Hide chat'}>
-            {chatCollapsed ? '›' : '‹ Hide'}
-          </button>
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden', display: chatCollapsed ? 'none' : 'flex', flexDirection: 'column' }}>
-          <ChatPane />
-        </div>
+      {/* Backdrop for drawers */}
+      {drawer && (
+        <div
+          onClick={() => setDrawer(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 99,
+            background: 'rgba(0,0,0,0.45)',
+          }}
+        />
+      )}
+
+      {/* Sidebar drawer */}
+      <div style={{
+        position: 'fixed', left: 0, top: TOP_H,
+        height: `calc(100vh - ${TOP_H}px)`, width: 280,
+        zIndex: 100, background: '#0a0f1e',
+        borderRight: '1px solid #334155',
+        transform: drawer === 'sidebar' ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.2s ease',
+        boxShadow: drawer === 'sidebar' ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
+        overflow: 'hidden',
+      }}>
+        <Sidebar />
       </div>
 
-      {/* Right panel — tabbed Preview / Code */}
-      <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* Tab switcher strip */}
+      {/* Chat drawer */}
+      <div style={{
+        position: 'fixed', left: 0, top: TOP_H,
+        height: `calc(100vh - ${TOP_H}px)`, width: 380,
+        zIndex: 100, background: '#0a0f1e',
+        borderRight: '1px solid #334155',
+        transform: drawer === 'chat' ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.2s ease',
+        boxShadow: drawer === 'chat' ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+      }}>
+        <ChatPane />
+      </div>
+
+      {/* Main app shell */}
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+        height: '100vh', overflow: 'hidden',
+        background: '#0f172a', color: '#f1f5f9',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}>
+        {/* Top navigation bar */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          borderBottom: '1px solid #1e293b',
+          height: TOP_H, flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          padding: '0 8px',
           background: '#0a0f1e',
-          flexShrink: 0,
-          paddingLeft: 4,
+          borderBottom: '1px solid #1e293b',
+          gap: 4,
         }}>
-          <button style={TAB_BTN(rightTab === 'preview')} onClick={() => setRightTab('preview')}>
-            ▶ Preview
+          {/* Left: drawer toggles */}
+          <button
+            onClick={() => toggle('sidebar')}
+            title="Tools & Settings"
+            style={{ ...ICON_BTN, color: drawer === 'sidebar' ? '#a5b4fc' : '#475569', fontSize: 18 }}
+          >
+            ☰
           </button>
-          <button style={TAB_BTN(rightTab === 'code')} onClick={() => setRightTab('code')}>
-            {'</>'} Code
+          <button
+            onClick={() => toggle('chat')}
+            title="AI Chat"
+            style={{ ...NAV_BTN(drawer === 'chat') }}
+          >
+            💬 Chat
           </button>
-          <button style={TAB_BTN(rightTab === 'canvas')} onClick={() => setRightTab('canvas')}>
+
+          <div style={{ width: 1, height: 20, background: '#1e293b', margin: '0 4px' }} />
+
+          {/* Canvas mode */}
+          <button
+            onClick={() => { setCanvasMode(c => !c); setDrawer(null); }}
+            style={{ ...NAV_BTN(canvasMode) }}
+          >
             🧩 Canvas
           </button>
+
           <div style={{ flex: 1 }} />
+
+          {/* Right: help */}
           <button
             onClick={() => setShowHelp(true)}
             title="Help & shortcuts (?)"
-            style={{ ...TAB_BTN(false), padding: '6px 12px', fontSize: 13, color: '#475569' }}
-          >?</button>
+            style={{ ...ICON_BTN, fontSize: 14, color: '#475569' }}
+          >
+            ?
+          </button>
         </div>
 
-        {/* Panes — only the active one is visible; all stay mounted to preserve state */}
-        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'preview' ? 'flex' : 'none', flexDirection: 'column' }}>
-          <PreviewPane />
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
-          <CodePane />
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden', display: rightTab === 'canvas' ? 'flex' : 'none', flexDirection: 'column' }}>
-          <CanvasPane />
+        {/* Main content */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+          {canvasMode ? (
+            <CanvasPane />
+          ) : (
+            <>
+              {/* Code pane — left half */}
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <CodePane />
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: 4, background: '#1e293b', flexShrink: 0, cursor: 'col-resize' }} />
+
+              {/* Preview pane — right half */}
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <PreviewPane />
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </div>
     </>
   );
 }

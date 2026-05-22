@@ -13,9 +13,15 @@ import { useShare } from '../../hooks/useShare';
 import { useExportZip } from '../../hooks/useExportZip';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { useGist } from '../../hooks/useGist';
+import { useReview } from '../../hooks/useReview';
+import { useTestGen } from '../../hooks/useTestGen';
+import { useDocs } from '../../hooks/useDocs';
+import { useStorybookExport } from '../../hooks/useStorybookExport';
 import { ComponentTabs } from './ComponentTabs';
 import { FileTabs } from './FileTabs';
 import { RefactorMenu } from './RefactorMenu';
+import { ReviewPanel } from './ReviewPanel';
+import { DocsModal } from './DocsModal';
 import { parseComponents, patchComponent } from '../../lib/parseComponents';
 
 const BTN: React.CSSProperties = {
@@ -54,6 +60,12 @@ export function CodePane() {
   const { loading: shareLoading, shareId, share, dismiss: dismissShare } = useShare();
   const { loading: zipLoading, exportZip } = useExportZip();
   const { loading: gistLoading, createGist } = useGist();
+  const { streaming: reviewStreaming, result: reviewResult, review, clear: clearReview } = useReview();
+  const { loading: testLoading, generateTests } = useTestGen();
+  const { loading: docsLoading, docs, generateDocs, clear: clearDocs } = useDocs();
+  const { loading: storiesLoading, exportStories } = useStorybookExport();
+  const [showDocsModal, setShowDocsModal] = useState(false);
+  const [embedSnippet, setEmbedSnippet] = useState<string | null>(null);
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -143,7 +155,7 @@ export function CodePane() {
           <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
           <button onClick={() => saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' })} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
           <button
-            onClick={async () => { const url = await share(); if (url) setTimeout(dismissShare, 4000); }}
+            onClick={async () => { const result = await share(); if (result) { setTimeout(dismissShare, 4000); } }}
             disabled={shareLoading || !code}
             title={shareId ? `Copied! Share ID: ${shareId}` : 'Share — copies link to clipboard'}
             style={{ ...BTN, opacity: shareLoading || !code ? 0.5 : 1, color: shareId ? '#34d399' : '#94a3b8', borderColor: shareId ? '#059669' : '#334155' }}
@@ -156,6 +168,15 @@ export function CodePane() {
           <input ref={imageUploadRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAndInsert(f); e.target.value = ''; }} />
           <button onClick={() => imageUploadRef.current?.click()} disabled={uploading} title="Upload image asset — inserts URL at cursor" style={{ ...BTN, opacity: uploading ? 0.5 : 1 }}>{uploading ? '⏳' : '📎 Img'}</button>
           <button onClick={() => createGist(componentName, code, language)} disabled={gistLoading || !code} title="Export to GitHub Gist (opens in new tab)" style={{ ...BTN, opacity: gistLoading || !code ? 0.5 : 1 }}>{gistLoading ? '⏳' : 'Gist ↗'}</button>
+          <button onClick={() => review(code)} disabled={reviewStreaming || !code} title="AI code review" style={{ ...BTN, opacity: reviewStreaming || !code ? 0.5 : 1 }}>{reviewStreaming ? '⏳' : '🔍 Review'}</button>
+          <button onClick={() => generateTests(code, componentName, language)} disabled={testLoading || !code} title="Generate Vitest tests" style={{ ...BTN, opacity: testLoading || !code ? 0.5 : 1 }}>{testLoading ? '⏳' : '🧪 Tests'}</button>
+          <button onClick={async () => { await generateDocs(code, componentName); setShowDocsModal(true); }} disabled={docsLoading || !code} title="Generate JSDoc + README" style={{ ...BTN, opacity: docsLoading || !code ? 0.5 : 1 }}>{docsLoading ? '⏳' : '📄 Docs'}</button>
+          <button onClick={() => exportStories(code, componentName)} disabled={storiesLoading || !code} title="Generate Storybook stories" style={{ ...BTN, opacity: storiesLoading || !code ? 0.5 : 1 }}>{storiesLoading ? '⏳' : '📖 Stories'}</button>
+          {embedSnippet ? (
+            <button onClick={() => { navigator.clipboard.writeText(embedSnippet).catch(() => {}); }} title="Click to copy embed code" style={{ ...BTN, color: '#34d399', borderColor: '#059669', fontSize: 11 }}>✓ Embed</button>
+          ) : (
+            <button onClick={() => { if (shareId) { const s = `<iframe src="${window.location.origin}${window.location.pathname}?share=${shareId}&embed=1" width="100%" height="500" frameborder="0"></iframe>`; setEmbedSnippet(s); navigator.clipboard.writeText(s).catch(() => {}); } }} disabled={!shareId} title="Copy embed snippet (share first)" style={{ ...BTN, opacity: !shareId ? 0.4 : 1 }}>{'</> Embed'}</button>
+          )}
           <RefactorMenu
             disabled={!code}
             onSelect={(prompt) => sendRefactor({ prompt, templateCode: code })}
@@ -200,6 +221,14 @@ export function CodePane() {
           </div>
         )}
       </div>
+
+      {/* Review panel */}
+      <ReviewPanel result={reviewResult} streaming={reviewStreaming} onClear={clearReview} />
+
+      {/* Docs modal */}
+      {showDocsModal && docs && (
+        <DocsModal jsdoc={docs.jsdoc} readme={docs.readme} onClose={() => { setShowDocsModal(false); clearDocs(); }} />
+      )}
 
       {/* Inject modal */}
       {showInject && (

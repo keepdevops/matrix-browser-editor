@@ -26,11 +26,49 @@ export const CDN: Record<string, string[]> = {
   ],
 };
 
+const KNOWN_PKGS = new Set(['react', 'react-dom', 'recharts', 'react-chartjs-2', 'chart.js',
+  '@mui/material', 'antd', '@chakra-ui/react', '@mantine/core']);
+
+export function extractUnknownImports(code: string): string[] {
+  const re = /from\s+['"](@?[a-z0-9][\w.-]*(?:\/[^'"]*)?)['"]/g;
+  const found = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    const pkg = m[1].startsWith('@') ? m[1].split('/').slice(0, 2).join('/') : m[1].split('/')[0];
+    if (!KNOWN_PKGS.has(pkg) && !pkg.startsWith('.')) found.add(pkg);
+  }
+  return [...found];
+}
+
 export function resolveCdnTags(code: string, styleSystem: string): string {
   const tags = [...(CDN[styleSystem] || CDN.tailwind)];
   if (/from ['"]recharts['"]|require\(['"]recharts['"]\)/.test(code)) tags.push(...(CDN.recharts ?? []));
   if (/from ['"]react-chartjs-2['"]|from ['"]chart\.js['"]/.test(code)) tags.push(...(CDN.chartjs ?? []));
   return [...new Set(tags)].join('\n    ');
+}
+
+const cdnCache = new Map<string, string>();
+
+export async function resolveCdnImportMap(packages: string[]): Promise<string> {
+  if (!packages.length) return '';
+  const toFetch = packages.filter(p => !cdnCache.has(p));
+  if (toFetch.length) {
+    try {
+      const SERVER = (import.meta as { env?: Record<string, string> }).env?.VITE_SERVER_URL ?? 'http://localhost:3001';
+      const res = await fetch(`${SERVER}/api/cdn-resolve`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packages: toFetch }),
+      });
+      if (res.ok) {
+        const data: { resolved: Record<string, string> } = await res.json();
+        Object.entries(data.resolved).forEach(([k, v]) => cdnCache.set(k, v));
+      }
+    } catch (err) { console.error('[useBuildSrcdoc] cdn-resolve error:', err); }
+  }
+  const imports: Record<string, string> = {};
+  packages.forEach(p => { if (cdnCache.has(p)) imports[p] = cdnCache.get(p)!; });
+  if (!Object.keys(imports).length) return '';
+  return `<script type="importmap">${JSON.stringify({ imports })}</script>`;
 }
 
 export function buildSrcdoc(code: string, styleSystem: string, theme: string, extraProps?: Record<string, unknown>): string {

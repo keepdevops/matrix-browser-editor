@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePreview } from '../../hooks/usePreview';
+import { usePreview, buildSrcdocForTheme } from '../../hooks/usePreview';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useSessionStore } from '../../store/sessionStore';
 import { useAgentStore } from '../../store/agentStore';
@@ -30,7 +30,7 @@ export function PreviewPane() {
   const [inspectMode, setInspectMode] = React.useState(false);
   const [propOverrides, setPropOverrides] = React.useState<Record<string, unknown>>({});
   const { iframeRef, splitRef } = usePreview(inspectMode, propOverrides);
-  const { theme, setTheme, setPendingScreenshot } = useSessionStore();
+  const { theme, setTheme, setPendingScreenshot, styleSystem } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { code } = useEditorStore();
   const { imageUrl, isCapturing, error: screenshotError, capture, dismiss } = useScreenshot();
@@ -38,6 +38,32 @@ export function PreviewPane() {
   const { info: inspectInfo, dismiss: dismissInspect } = useInspect(inspectMode);
   const [viewportWidth, setViewportWidth] = React.useState(0);
   const [splitView, setSplitView] = React.useState(false);
+  const [themeCompare, setThemeCompare] = React.useState(false);
+  const [autoScore, setAutoScore] = React.useState<number | null>(null);
+  const autoAuditTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    if (!code) { setAutoScore(null); return; }
+    if (autoAuditTimeout.current) clearTimeout(autoAuditTimeout.current);
+    autoAuditTimeout.current = setTimeout(async () => {
+      try {
+        const SERVER = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+        const res = await fetch(`${SERVER}/api/audit`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const issues: Array<{ severity: string }> = data.issues ?? [];
+        const penalty = issues.reduce((acc, i) => {
+          if (i.severity === 'error') return acc + 20;
+          if (i.severity === 'warning') return acc + 10;
+          return acc + 3;
+        }, 0);
+        setAutoScore(Math.max(0, 100 - penalty));
+      } catch { /* silent — background audit */ }
+    }, 2000);
+  }, [code]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
@@ -72,6 +98,27 @@ export function PreviewPane() {
               </button>
             ))}
           </div>
+          {autoScore !== null && (
+            <span
+              title="Live a11y score (auto-updates on code change)"
+              style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+                background: autoScore >= 80 ? 'rgba(34,197,94,0.15)' : autoScore >= 50 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)',
+                color: autoScore >= 80 ? '#4ade80' : autoScore >= 50 ? '#fbbf24' : '#f87171',
+                border: `1px solid ${autoScore >= 80 ? '#166534' : autoScore >= 50 ? '#92400e' : '#7f1d1d'}`,
+                cursor: 'default',
+              }}
+            >
+              a11y {autoScore}
+            </span>
+          )}
+          <button
+            onClick={() => setThemeCompare(c => !c)}
+            title="Side-by-side dark/light theme comparison"
+            style={{ ...BTN, color: themeCompare ? '#a5b4fc' : '#94a3b8', borderColor: themeCompare ? '#4f46e5' : '#334155', background: themeCompare ? 'rgba(99,102,241,0.15)' : '#1e293b' }}
+          >
+            ◑ Themes
+          </button>
           <button
             onClick={() => setSplitView(s => !s)}
             title="Toggle mobile/desktop split view"
@@ -119,7 +166,24 @@ export function PreviewPane() {
         </div>
       )}
 
-      <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', gap: splitView ? 1 : 0, justifyContent: splitView ? 'stretch' : 'center', background: splitView ? '#0a0f1e' : undefined }}>
+      {themeCompare && (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {(['dark', 'light'] as const).map(t => (
+            <div key={t} style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: t === 'dark' ? '1px solid #334155' : undefined }}>
+              <div style={{ padding: '2px 8px', background: '#0a0f1e', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.06em' }}>
+                {t === 'dark' ? '☾ DARK' : '☀ LIGHT'}
+              </div>
+              <iframe
+                title={`${t} theme preview`}
+                sandbox="allow-scripts"
+                style={{ flex: 1, width: '100%', border: 'none', background: t === 'dark' ? '#0f172a' : '#f8fafc' }}
+                srcDoc={buildSrcdocForTheme(code, styleSystem, t)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      {!themeCompare && <div style={{ flex: 1, position: 'relative', overflow: 'auto', display: 'flex', gap: splitView ? 1 : 0, justifyContent: splitView ? 'stretch' : 'center', background: splitView ? '#0a0f1e' : undefined }}>
         {splitView && (
           <div style={{ display: 'flex', flexDirection: 'column', width: 375, flexShrink: 0, borderRight: '1px solid #1e293b' }}>
             <div style={{ padding: '2px 8px', background: '#0a0f1e', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.06em' }}>📱 MOBILE 375px</div>
@@ -155,6 +219,8 @@ export function PreviewPane() {
           <InspectPanel info={inspectInfo} onDismiss={dismissInspect} />
         )}
       </div>
+
+      </div>}
 
       <PropControlsPanel onPropsChange={setPropOverrides} />
 

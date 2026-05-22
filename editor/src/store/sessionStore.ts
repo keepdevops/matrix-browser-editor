@@ -11,8 +11,6 @@ interface SessionState {
   recentPaths: string[];
   sidebarTab: 'templates' | 'style' | 'tokens' | 'animation' | 'snapshots' | 'connector' | 'library';
   pendingScreenshot: string | null;
-  rightTab: 'preview' | 'code' | 'canvas';
-
   setStyleSystem: (s: StyleSystem) => void;
   setTheme: (t: Theme) => void;
   setActiveTemplate: (t: Template | null) => void;
@@ -21,7 +19,6 @@ interface SessionState {
   addRecentPath: (p: string) => void;
   setSidebarTab: (tab: SessionState['sidebarTab']) => void;
   setPendingScreenshot: (url: string | null) => void;
-  setRightTab: (tab: 'preview' | 'code' | 'canvas') => void;
   pendingChatMessage: string | null;
   setPendingChatMessage: (msg: string | null) => void;
 }
@@ -35,7 +32,6 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   recentPaths: [],
   sidebarTab: 'templates',
   pendingScreenshot: null,
-  rightTab: 'preview',
   pendingChatMessage: null,
 
   setStyleSystem: (styleSystem) => set({ styleSystem }),
@@ -48,7 +44,6 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   })),
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setPendingScreenshot: (pendingScreenshot) => set({ pendingScreenshot }),
-  setRightTab: (rightTab) => set({ rightTab }),
   setPendingChatMessage: (pendingChatMessage) => set({ pendingChatMessage }),
 }), {
   name: 'session-store',

@@ -24,10 +24,11 @@ export function useShare() {
       });
       if (!res.ok) throw new Error(`Share failed: ${res.status}`);
       const data = await res.json();
-      setState({ loading: false, shareId: data.id, error: null });
       const fullUrl = `${window.location.origin}${window.location.pathname}?share=${data.id}`;
+      const embedHtml = `<iframe src="${window.location.origin}${window.location.pathname}?share=${data.id}&embed=1" width="100%" height="500" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+      setState({ loading: false, shareId: data.id, error: null });
       await navigator.clipboard.writeText(fullUrl).catch(() => {});
-      return fullUrl;
+      return { url: fullUrl, embed: embedHtml };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Share failed';
       console.error('[useShare]', msg);
