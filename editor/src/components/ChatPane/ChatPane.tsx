@@ -28,6 +28,13 @@ export function ChatPane() {
     send({ prompt, templateCode: activeTemplate?.code, screenshotImage: image ?? undefined });
   };
 
+  const lastUserPrompt = [...messages].reverse().find((m) => m.role === 'user')?.content ?? null;
+
+  const handleRetry = () => {
+    if (!lastUserPrompt || isStreaming) return;
+    send({ prompt: lastUserPrompt, templateCode: activeTemplate?.code });
+  };
+
   const handleVariants = async () => {
     if (!code.trim() || isStreaming || generatingVariants) return;
     setGeneratingVariants(true);
@@ -69,6 +76,16 @@ export function ChatPane() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <StatusBadge status={status} message={statusMsg} />
+          {lastUserPrompt && (
+            <button
+              onClick={handleRetry}
+              disabled={isStreaming}
+              title={`Retry: "${lastUserPrompt.slice(0, 60)}${lastUserPrompt.length > 60 ? '…' : ''}"`}
+              style={{ background: 'none', border: '1px solid #334155', borderRadius: 4, color: isStreaming ? '#475569' : '#94a3b8', cursor: isStreaming ? 'not-allowed' : 'pointer', fontSize: 11, padding: '2px 7px' }}
+            >
+              ↺ Retry
+            </button>
+          )}
           {code.trim() && (
             <button
               onClick={handleVariants}
