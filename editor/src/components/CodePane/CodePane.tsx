@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
 import { useEditorStore } from '../../store/editorStore';
@@ -85,16 +85,6 @@ export function CodePane() {
   // Keep active file tab in sync
   useEffect(() => { updateActiveCode(code); }, [code, updateActiveCode]);
 
-  // Keyboard undo/redo
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-      if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo]);
 
   // Warn before closing tab if there are unsaved changes
   useEffect(() => {
@@ -119,11 +109,28 @@ export function CodePane() {
 
   const monacoLang = language === 'tsx' || language === 'jsx' ? 'typescript' : 'javascript';
 
-  const handleFormat = async () => {
+  const handleFormat = useCallback(async () => {
     setFormatting(true);
     try { setCode(await formatCode(code, language)); } catch (e) { console.error('[format]', e); }
     finally { setFormatting(false); }
-  };
+  }, [code, language, setCode]);
+
+  // Keyboard shortcuts (placed after handleFormat to avoid TDZ)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
+      if (e.key === 's') {
+        e.preventDefault();
+        if (code.trim()) { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); }
+      }
+      if (e.key === 'p') { e.preventDefault(); handleFormat(); }
+      if (e.key === 'd') { e.preventDefault(); toggleDiffMode(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo, code, componentName, language, lastComponent, saveToLibrary, markSaved, handleFormat, toggleDiffMode]);
 
   const handleExport = async () => {
     try { await exportComponent(targetProjectPath || undefined); setTimeout(reset, 3000); }
@@ -223,9 +230,13 @@ export function CodePane() {
         ) : (
           <Editor height="100%" language={monacoLang} theme="vs-dark" value={displayCode}
             onChange={handleEditorChange}
-            onMount={(editor) => {
+            onMount={(editor, monaco) => {
               editorRef.current = editor;
               editor.onDidChangeCursorSelection(onSelectionChange);
+              // Override Cmd+D inside Monaco to toggle diff instead of "select next occurrence"
+              editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
+                toggleDiffMode();
+              });
             }}
             options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', wordWrap: 'on', scrollBeyondLastLine: false, formatOnPaste: true }}
           />

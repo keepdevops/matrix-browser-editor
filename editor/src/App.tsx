@@ -62,9 +62,14 @@ export default function App() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
+      if (e.key === 'Escape') { setDrawer(null); return; }
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === '\\') { e.preventDefault(); toggle('sidebar'); return; }
+        if (e.key === 'k') { e.preventDefault(); setDrawer('sidebar'); return; }
+        if ((e.key === 'j') || (e.shiftKey && e.key === 'C')) { e.preventDefault(); toggle('chat'); return; }
+      }
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === '?') setShowHelp(h => !h);
-      if (e.key === 'Escape') setDrawer(null);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

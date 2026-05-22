@@ -89,6 +89,7 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); return; }
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); return; }
     if (e.key === 'ArrowUp') {
       const history = loadHistory();
       if (!history.length) return;

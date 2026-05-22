@@ -1,16 +1,22 @@
 import React from 'react';
 
+const MOD = navigator.platform.includes('Mac') ? '⌘' : 'Ctrl';
+
 const SHORTCUTS = [
-  { keys: 'Ctrl+Z', action: 'Undo' },
-  { keys: 'Ctrl+Shift+Z', action: 'Redo' },
-  { keys: 'Enter', action: 'Send prompt' },
+  { keys: `${MOD}+S`, action: 'Save to Library' },
+  { keys: `${MOD}+P`, action: 'Format with Prettier' },
+  { keys: `${MOD}+D`, action: 'Toggle diff view' },
+  { keys: `${MOD}+Z`, action: 'Undo' },
+  { keys: `${MOD}+Shift+Z`, action: 'Redo' },
+  { keys: `${MOD}+\\`, action: 'Toggle sidebar' },
+  { keys: `${MOD}+K`, action: 'Open sidebar (templates)' },
+  { keys: `${MOD}+J`, action: 'Toggle chat' },
+  { keys: 'Enter', action: 'Send chat prompt' },
+  { keys: `${MOD}+Enter`, action: 'Send chat prompt (multiline)' },
   { keys: 'Shift+Enter', action: 'New line in prompt' },
   { keys: '↑ / ↓', action: 'Cycle prompt history' },
-  { keys: '✦ button', action: 'Format with Prettier' },
-  { keys: '+ New', action: 'New blank file' },
-  { keys: '‹ Hide', action: 'Collapse chat panel' },
   { keys: '?', action: 'Show this help' },
-  { keys: 'Esc', action: 'Close modals' },
+  { keys: 'Esc', action: 'Close drawers / modals' },
 ];
 
 const FEATURES = [
