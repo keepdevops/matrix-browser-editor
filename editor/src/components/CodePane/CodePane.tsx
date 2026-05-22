@@ -20,6 +20,7 @@ import { useStorybookExport } from '../../hooks/useStorybookExport';
 import { ComponentTabs } from './ComponentTabs';
 import { FileTabs } from './FileTabs';
 import { RefactorMenu } from './RefactorMenu';
+import { ExportMenu } from './ExportMenu';
 import { ReviewPanel } from './ReviewPanel';
 import { DocsModal } from './DocsModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
@@ -241,21 +242,27 @@ export function CodePane() {
           >
             {shareLoading ? '⏳' : shareId ? '✓ Copied' : '🔗 Share'}
           </button>
-          <button onClick={handleExport} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Export</button>
-          <button onClick={() => { setInjectPath(''); setShowInject(true); }} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Inject</button>
-          <button onClick={exportZip} disabled={zipLoading || !code} title="Download as ZIP" style={{ ...BTN, opacity: zipLoading || !code ? 0.5 : 1 }}>{zipLoading ? '⏳' : '⬇ ZIP'}</button>
           <input ref={imageUploadRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAndInsert(f); e.target.value = ''; }} />
-          <button onClick={() => imageUploadRef.current?.click()} disabled={uploading} title="Upload image asset — inserts URL at cursor" style={{ ...BTN, opacity: uploading ? 0.5 : 1 }}>{uploading ? '⏳' : '📎 Img'}</button>
-          <button onClick={() => createGist(componentName, code, language)} disabled={gistLoading || !code} title="Export to GitHub Gist (opens in new tab)" style={{ ...BTN, opacity: gistLoading || !code ? 0.5 : 1 }}>{gistLoading ? '⏳' : 'Gist ↗'}</button>
+          <ExportMenu
+            disabled={!code}
+            actions={[
+              { label: 'Copy code', icon: '📋', onClick: () => navigator.clipboard.writeText(code).catch(() => {}) },
+              { label: `Download .${language}`, icon: '⬇', title: `Save as ${componentName}.${language}`, onClick: () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([code], { type: 'text/plain' })); a.download = `${componentName}.${language}`; a.click(); } },
+              { label: 'Download ZIP', icon: '🗜', loading: zipLoading, onClick: exportZip },
+              { label: '---', icon: '', onClick: () => {} },
+              { label: 'Export to filesystem', icon: '📂', disabled: status === 'loading', onClick: handleExport },
+              { label: 'Inject into file…', icon: '💉', disabled: status === 'loading', onClick: () => { setInjectPath(''); setShowInject(true); } },
+              { label: 'GitHub Gist ↗', icon: '🐙', loading: gistLoading, onClick: () => createGist(componentName, code, language) },
+              { label: '---', icon: '', onClick: () => {} },
+              { label: 'Generate Tests', icon: '🧪', loading: testLoading, onClick: () => generateTests(code, componentName, language) },
+              { label: 'Generate Docs', icon: '📄', loading: docsLoading, onClick: async () => { await generateDocs(code, componentName); setShowDocsModal(true); } },
+              { label: 'Storybook Stories', icon: '📖', loading: storiesLoading, onClick: () => exportStories(code, componentName) },
+              { label: '---', icon: '', onClick: () => {} },
+              { label: embedSnippet ? 'Copy embed code ✓' : 'Copy embed snippet', icon: '<>', disabled: !shareId, title: shareId ? undefined : 'Share first to get an embed link', color: embedSnippet ? '#34d399' : undefined, onClick: () => { if (shareId) { const s = `<iframe src="${window.location.origin}${window.location.pathname}?share=${shareId}&embed=1" width="100%" height="500" frameborder="0"></iframe>`; setEmbedSnippet(s); navigator.clipboard.writeText(s).catch(() => {}); } } },
+              { label: 'Upload image asset', icon: '📎', loading: uploading, onClick: () => imageUploadRef.current?.click() },
+            ]}
+          />
           <button onClick={() => review(code)} disabled={reviewStreaming || !code} title="AI code review" style={{ ...BTN, opacity: reviewStreaming || !code ? 0.5 : 1 }}>{reviewStreaming ? '⏳' : '🔍 Review'}</button>
-          <button onClick={() => generateTests(code, componentName, language)} disabled={testLoading || !code} title="Generate Vitest tests" style={{ ...BTN, opacity: testLoading || !code ? 0.5 : 1 }}>{testLoading ? '⏳' : '🧪 Tests'}</button>
-          <button onClick={async () => { await generateDocs(code, componentName); setShowDocsModal(true); }} disabled={docsLoading || !code} title="Generate JSDoc + README" style={{ ...BTN, opacity: docsLoading || !code ? 0.5 : 1 }}>{docsLoading ? '⏳' : '📄 Docs'}</button>
-          <button onClick={() => exportStories(code, componentName)} disabled={storiesLoading || !code} title="Generate Storybook stories" style={{ ...BTN, opacity: storiesLoading || !code ? 0.5 : 1 }}>{storiesLoading ? '⏳' : '📖 Stories'}</button>
-          {embedSnippet ? (
-            <button onClick={() => { navigator.clipboard.writeText(embedSnippet).catch(() => {}); }} title="Click to copy embed code" style={{ ...BTN, color: '#34d399', borderColor: '#059669', fontSize: 11 }}>✓ Embed</button>
-          ) : (
-            <button onClick={() => { if (shareId) { const s = `<iframe src="${window.location.origin}${window.location.pathname}?share=${shareId}&embed=1" width="100%" height="500" frameborder="0"></iframe>`; setEmbedSnippet(s); navigator.clipboard.writeText(s).catch(() => {}); } }} disabled={!shareId} title="Copy embed snippet (share first)" style={{ ...BTN, opacity: !shareId ? 0.4 : 1 }}>{'</> Embed'}</button>
-          )}
           <RefactorMenu
             disabled={!code}
             onSelect={(prompt) => sendRefactor({ prompt, templateCode: code })}
