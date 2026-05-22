@@ -11,6 +11,8 @@ import { AuditPanel } from './AuditPanel';
 import { InspectPanel } from './InspectPanel';
 import { PropControlsPanel } from './PropControlsPanel';
 import { ConsolePanel } from './ConsolePanel';
+import { DeviceFrame } from './DeviceFrame';
+import { ScreenshotModal } from './ScreenshotModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
 import { useConsoleCapture } from '../../hooks/useConsoleCapture';
 
@@ -42,6 +44,8 @@ export function PreviewPane() {
   const { info: inspectInfo, dismiss: dismissInspect } = useInspect(inspectMode);
   const { loading: visualEditLoading, apply: applyVisualEdit, pending: visualPending, confirmPending: confirmVisual, rejectPending: rejectVisual } = useVisualEdit();
   const [viewportWidth, setViewportWidth] = React.useState(0);
+  const [zoom, setZoom] = React.useState(100);
+  const [showFrame, setShowFrame] = React.useState(false);
   const [splitView, setSplitView] = React.useState(false);
   const [themeCompare, setThemeCompare] = React.useState(false);
   const [autoScore, setAutoScore] = React.useState<number | null>(null);
@@ -94,7 +98,7 @@ export function PreviewPane() {
               <button
                 key={vp.width}
                 title={vp.title}
-                onClick={() => setViewportWidth(vp.width)}
+                onClick={() => { setViewportWidth(vp.width); if (vp.width === 0) setShowFrame(false); }}
                 style={{
                   ...BTN,
                   background: viewportWidth === vp.width ? '#334155' : 'transparent',
@@ -107,6 +111,36 @@ export function PreviewPane() {
               </button>
             ))}
           </div>
+          {/* Zoom controls */}
+          <div style={{ display: 'flex', gap: 2, background: '#1e293b', borderRadius: 6, padding: 2 }}>
+            {[75, 100, 125, 150].map(z => (
+              <button
+                key={z}
+                title={`${z}% zoom`}
+                onClick={() => setZoom(z)}
+                style={{
+                  ...BTN,
+                  background: zoom === z ? '#334155' : 'transparent',
+                  border: 'none',
+                  padding: '2px 6px',
+                  fontSize: 10,
+                  color: zoom === z ? '#f1f5f9' : '#64748b',
+                  fontWeight: zoom === z ? 700 : 400,
+                }}
+              >
+                {z}%
+              </button>
+            ))}
+          </div>
+          {viewportWidth > 0 && (
+            <button
+              onClick={() => setShowFrame(f => !f)}
+              title="Toggle device frame"
+              style={{ ...BTN, color: showFrame ? '#a5b4fc' : '#64748b', borderColor: showFrame ? '#4f46e5' : '#334155', background: showFrame ? 'rgba(99,102,241,0.15)' : '#1e293b', fontSize: 11 }}
+            >
+              ⬜ Frame
+            </button>
+          )}
           {autoScore !== null && (
             <span
               title="Live a11y score (auto-updates on code change)"
@@ -211,24 +245,44 @@ export function PreviewPane() {
             />
           </div>
         )}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, alignItems: !splitView && viewportWidth > 0 ? 'center' : undefined }}>
           {splitView && <div style={{ padding: '2px 8px', background: '#0a0f1e', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.06em' }}>🖥 DESKTOP</div>}
-          <iframe
-            ref={iframeRef}
-            title="Component Preview"
-            sandbox="allow-scripts"
-            style={{
-              flex: 1,
-              width: (!splitView && viewportWidth > 0) ? viewportWidth : '100%',
-              height: splitView ? undefined : '100%',
-              minHeight: splitView ? undefined : '100%',
-              border: (!splitView && viewportWidth > 0) ? '1px solid #334155' : 'none',
-              borderTop: 'none',
-              background: theme === 'dark' ? '#0f172a' : '#f8fafc',
-              flexShrink: 0,
-              cursor: inspectMode ? 'crosshair' : undefined,
-            }}
-          />
+          {!splitView && viewportWidth > 0 && showFrame ? (
+            <div style={{ overflow: 'auto', flex: 1, display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <DeviceFrame width={viewportWidth} zoom={zoom}>
+                <iframe
+                  ref={iframeRef}
+                  title="Component Preview"
+                  sandbox="allow-scripts"
+                  style={{ width: viewportWidth, height: 667, border: 'none', display: 'block', background: theme === 'dark' ? '#0f172a' : '#f8fafc', cursor: inspectMode ? 'crosshair' : undefined }}
+                />
+              </DeviceFrame>
+            </div>
+          ) : (
+            <div style={{
+              flex: 1, overflow: 'hidden', display: 'flex',
+              transformOrigin: 'top center',
+              transform: (!splitView && zoom !== 100) ? `scale(${zoom / 100})` : undefined,
+              ...((!splitView && zoom !== 100) ? { height: `${10000 / zoom}%` } : {}),
+            }}>
+              <iframe
+                ref={iframeRef}
+                title="Component Preview"
+                sandbox="allow-scripts"
+                style={{
+                  flex: 1,
+                  width: (!splitView && viewportWidth > 0) ? viewportWidth : '100%',
+                  height: splitView ? undefined : '100%',
+                  minHeight: splitView ? undefined : '100%',
+                  border: (!splitView && viewportWidth > 0) ? '1px solid #334155' : 'none',
+                  borderTop: 'none',
+                  background: theme === 'dark' ? '#0f172a' : '#f8fafc',
+                  flexShrink: 0,
+                  cursor: inspectMode ? 'crosshair' : undefined,
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {inspectInfo && (
@@ -247,84 +301,12 @@ export function PreviewPane() {
 
       <PropControlsPanel onPropsChange={setPropOverrides} />
 
-      {(imageUrl || screenshotError) && (
-        <div
-          onClick={dismiss}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 50, cursor: 'pointer',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: '#0f172a', border: '1px solid #334155', borderRadius: 12,
-              padding: 16, maxWidth: '90vw', maxHeight: '90vh',
-              display: 'flex', flexDirection: 'column', gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>SCREENSHOT</span>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {imageUrl && (
-                  <>
-                    <button
-                      onClick={() => { setPendingScreenshot(imageUrl); dismiss(); }}
-                      style={{ ...BTN, color: '#a5b4fc', borderColor: '#4f46e5' }}
-                    >
-                      ✏ Edit with AI
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch(imageUrl!);
-                          const blob = await res.blob();
-                          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                        } catch (err) { console.error('[PreviewPane] copy failed:', err); }
-                      }}
-                      style={BTN}
-                    >
-                      📋 Copy
-                    </button>
-                    <a
-                      href={imageUrl}
-                      download="component.png"
-                      style={{ ...BTN, textDecoration: 'none', color: '#7dd3fc' }}
-                    >
-                      ↓ Save
-                    </a>
-                    <button
-                      onClick={() => {
-                        const name = prompt('Filename:', 'component.png');
-                        if (!name || !imageUrl) return;
-                        const a = document.createElement('a');
-                        a.href = imageUrl; a.download = name; a.click();
-                      }}
-                      style={BTN}
-                    >
-                      ↓ Save As…
-                    </button>
-                  </>
-                )}
-                <button onClick={dismiss} style={BTN}>✕ Close</button>
-              </div>
-            </div>
-            {screenshotError && (
-              <div style={{ color: '#f87171', fontSize: 13, padding: '8px 12px', background: '#1e0a0a', borderRadius: 6 }}>
-                {screenshotError}
-              </div>
-            )}
-            {imageUrl && (
-              <img
-                src={imageUrl}
-                alt="Component screenshot"
-                style={{ borderRadius: 8, maxWidth: '80vw', maxHeight: '75vh', objectFit: 'contain' }}
-              />
-            )}
-          </div>
-        </div>
-      )}
+      <ScreenshotModal
+        imageUrl={imageUrl}
+        error={screenshotError}
+        onDismiss={dismiss}
+        onEditWithAI={(url) => { setPendingScreenshot(url); }}
+      />
 
       {visualPending && (
         <AiDiffModal
