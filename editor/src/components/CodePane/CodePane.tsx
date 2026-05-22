@@ -50,7 +50,7 @@ async function formatCode(code: string, lang: string): Promise<string> {
 }
 
 export function CodePane() {
-  const { code, previousCode, isDiffMode, language, componentName, historyIndex, history, toggleDiffMode, setCode, setComponentName, setLanguage, undo, redo } = useEditorStore();
+  const { code, previousCode, isDiffMode, language, componentName, historyIndex, history, toggleDiffMode, setCode, setComponentName, setLanguage, undo, redo, hasUnsavedChanges, markSaved } = useEditorStore();
   const { targetProjectPath, addRecentPath } = useSessionStore();
   const { save: saveToLibrary } = useLibraryStore();
   const { lastComponent } = useAgentStore();
@@ -94,6 +94,17 @@ export function CodePane() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
+
+  // Warn before closing tab if there are unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
 
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
   const components = useMemo(() => parseComponents(code), [code]);
@@ -151,6 +162,7 @@ export function CodePane() {
       <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', borderBottom: '1px solid #1e293b', flexShrink: 0, gap: 4, overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', flexShrink: 0, marginRight: 4 }}>
           <span style={{ color: '#6366f1' }}>{componentName}.{language}</span>
+          {hasUnsavedChanges && <span title="Unsaved changes" style={{ color: '#f59e0b', fontSize: 10, marginLeft: 4 }}>●</span>}
         </span>
         {status !== 'idle' && (
           <span style={{ fontSize: 11, color: statusColor, flexShrink: 0, whiteSpace: 'nowrap', marginRight: 4 }}>
@@ -165,7 +177,7 @@ export function CodePane() {
           <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
           <button onClick={toggleDiffMode} style={isDiffMode ? BTN_PRIMARY : BTN}>{isDiffMode ? 'Diff On' : 'Diff Off'}</button>
           <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
-          <button onClick={() => saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' })} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
+          <button onClick={() => { saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
           <button
             onClick={async () => { const result = await share(); if (result) { setTimeout(dismissShare, 4000); } }}
             disabled={shareLoading || !code}

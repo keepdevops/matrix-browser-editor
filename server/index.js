@@ -19,6 +19,7 @@ const paletteRouter = require('./routes/palette');
 const storiesRouter = require('./routes/stories');
 const publishRouter = require('./routes/publish');
 const cdnResolveRouter = require('./routes/cdnResolve');
+const { rateLimit } = require('./middleware/rateLimit');
 const path = require('path');
 
 const app = express();
@@ -28,19 +29,24 @@ app.use(cors({ origin: process.env.EDITOR_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '2mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/inline', inlineRouter);
-app.use('/api/audit', auditRouter);
+// AI routes — 20 req/min per IP
+const aiLimit = rateLimit(20, 60_000);
+// Heavy generation routes — 10 req/min per IP
+const genLimit = rateLimit(10, 60_000);
+
+app.use('/api/inline', aiLimit, inlineRouter);
+app.use('/api/audit', aiLimit, auditRouter);
 app.use('/api/share', shareRouter);
 app.use('/api/zip', zipRouter);
 app.use('/api/upload', uploadRouter);
-app.use('/api/review', reviewRouter);
-app.use('/api/tests', testsRouter);
-app.use('/api/docs', docsRouter);
-app.use('/api/palette', paletteRouter);
-app.use('/api/stories', storiesRouter);
+app.use('/api/review', genLimit, reviewRouter);
+app.use('/api/tests', genLimit, testsRouter);
+app.use('/api/docs', genLimit, docsRouter);
+app.use('/api/palette', genLimit, paletteRouter);
+app.use('/api/stories', genLimit, storiesRouter);
 app.use('/api/publish', publishRouter);
 app.use('/api/cdn-resolve', cdnResolveRouter);
-app.use('/api/agent', agentRouter);
+app.use('/api/agent', aiLimit, agentRouter);
 app.use('/api/preview', previewRouter);
 app.use('/api/connector', connectorRouter);
 
