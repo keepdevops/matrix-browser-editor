@@ -1,5 +1,6 @@
 import { useTokenStore, TOKEN_DEFAULTS, TOKEN_LIGHT, GOOGLE_FONTS, applyTokens, type TokenValues } from '../../store/tokenStore';
 import { useEditorStore } from '../../store/editorStore';
+import { CSSVarEditor } from './CSSVarEditor';
 
 const COLORS: { key: keyof TokenValues; label: string }[] = [
   { key: 'color-primary', label: 'Primary' },
@@ -147,6 +148,8 @@ export function TokensPanel() {
           Changes inject <code style={{ color: '#a5b4fc' }}>:root</code> CSS variables. Use <code style={{ color: '#a5b4fc' }}>var(--color-primary)</code>, <code style={{ color: '#a5b4fc' }}>var(--font-family)</code> etc.
         </p>
       </div>
+
+      <CSSVarEditor />
     </div>
   );
 }

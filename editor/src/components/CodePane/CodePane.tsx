@@ -10,6 +10,9 @@ import { useFileTabStore } from '../../store/fileTabStore';
 import { useInlineEdit } from '../../hooks/useInlineEdit';
 import { useAgentStream } from '../../hooks/useAgentStream';
 import { useShare } from '../../hooks/useShare';
+import { useExportZip } from '../../hooks/useExportZip';
+import { useImageUpload } from '../../hooks/useImageUpload';
+import { useGist } from '../../hooks/useGist';
 import { ComponentTabs } from './ComponentTabs';
 import { FileTabs } from './FileTabs';
 import { RefactorMenu } from './RefactorMenu';
@@ -49,8 +52,12 @@ export function CodePane() {
   const { status, message, exportComponent, injectIntoFile, reset } = useConnector();
   const { send: sendRefactor } = useAgentStream();
   const { loading: shareLoading, shareId, share, dismiss: dismissShare } = useShare();
+  const { loading: zipLoading, exportZip } = useExportZip();
+  const { loading: gistLoading, createGist } = useGist();
+  const imageUploadRef = useRef<HTMLInputElement>(null);
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const { uploading, uploadAndInsert } = useImageUpload(editorRef);
   const { inlineEdit, instruction, setInstruction, apply, dismiss, loading: inlineLoading, onSelectionChange } = useInlineEdit(editorRef);
 
   const [showInject, setShowInject] = useState(false);
@@ -145,6 +152,10 @@ export function CodePane() {
           </button>
           <button onClick={handleExport} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Export</button>
           <button onClick={() => { setInjectPath(''); setShowInject(true); }} disabled={status === 'loading' || !code} style={{ ...BTN, opacity: status === 'loading' || !code ? 0.5 : 1 }}>Inject</button>
+          <button onClick={exportZip} disabled={zipLoading || !code} title="Download as ZIP" style={{ ...BTN, opacity: zipLoading || !code ? 0.5 : 1 }}>{zipLoading ? '⏳' : '⬇ ZIP'}</button>
+          <input ref={imageUploadRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAndInsert(f); e.target.value = ''; }} />
+          <button onClick={() => imageUploadRef.current?.click()} disabled={uploading} title="Upload image asset — inserts URL at cursor" style={{ ...BTN, opacity: uploading ? 0.5 : 1 }}>{uploading ? '⏳' : '📎 Img'}</button>
+          <button onClick={() => createGist(componentName, code, language)} disabled={gistLoading || !code} title="Export to GitHub Gist (opens in new tab)" style={{ ...BTN, opacity: gistLoading || !code ? 0.5 : 1 }}>{gistLoading ? '⏳' : 'Gist ↗'}</button>
           <RefactorMenu
             disabled={!code}
             onSelect={(prompt) => sendRefactor({ prompt, templateCode: code })}

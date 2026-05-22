@@ -8,6 +8,7 @@ import { useAudit } from '../../hooks/useAudit';
 import { useInspect } from '../../hooks/useInspect';
 import { AuditPanel } from './AuditPanel';
 import { InspectPanel } from './InspectPanel';
+import { PropControlsPanel } from './PropControlsPanel';
 
 const BTN: React.CSSProperties = {
   padding: '3px 10px',
@@ -27,7 +28,8 @@ const VIEWPORTS = [
 
 export function PreviewPane() {
   const [inspectMode, setInspectMode] = React.useState(false);
-  const { iframeRef, splitRef } = usePreview(inspectMode);
+  const [propOverrides, setPropOverrides] = React.useState<Record<string, unknown>>({});
+  const { iframeRef, splitRef } = usePreview(inspectMode, propOverrides);
   const { theme, setTheme, setPendingScreenshot } = useSessionStore();
   const { isStreaming } = useAgentStore();
   const { code } = useEditorStore();
@@ -153,6 +155,8 @@ export function PreviewPane() {
           <InspectPanel info={inspectInfo} onDismiss={dismissInspect} />
         )}
       </div>
+
+      <PropControlsPanel onPropsChange={setPropOverrides} />
 
       {(imageUrl || screenshotError) && (
         <div

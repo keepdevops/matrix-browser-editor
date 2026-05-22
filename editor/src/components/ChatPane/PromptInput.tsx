@@ -22,10 +22,23 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+const HISTORY_KEY = 'prompt-history';
+const MAX_HISTORY = 50;
+
+function loadHistory(): string[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function saveHistory(h: string[]) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch { /* ignore */ }
+}
+
 export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, onClearImage, initialValue, onInitialValueConsumed }: PromptInputProps) {
   const [value, setValue] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+  const draftRef = useRef('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +76,11 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
   const submit = () => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
+    const history = loadHistory();
+    const updated = [trimmed, ...history.filter(h => h !== trimmed)].slice(0, MAX_HISTORY);
+    saveHistory(updated);
+    setHistoryIdx(-1);
+    draftRef.current = '';
     onSend(trimmed, attachedImage);
     setValue('');
     onClearImage?.();
@@ -70,7 +88,26 @@ export function PromptInput({ onSend, disabled, attachedImage, onImageAttach, on
   };
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); return; }
+    if (e.key === 'ArrowUp') {
+      const history = loadHistory();
+      if (!history.length) return;
+      e.preventDefault();
+      if (historyIdx === -1) draftRef.current = value;
+      const next = Math.min(historyIdx + 1, history.length - 1);
+      setHistoryIdx(next);
+      setValue(history[next]);
+      setTimeout(() => { const el = textareaRef.current; if (el) { el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 160)}px`; } }, 0);
+    }
+    if (e.key === 'ArrowDown') {
+      if (historyIdx === -1) return;
+      e.preventDefault();
+      const history = loadHistory();
+      const next = historyIdx - 1;
+      if (next < 0) { setHistoryIdx(-1); setValue(draftRef.current); }
+      else { setHistoryIdx(next); setValue(history[next]); }
+      setTimeout(() => { const el = textareaRef.current; if (el) { el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 160)}px`; } }, 0);
+    }
   };
 
   const handleInput = () => {

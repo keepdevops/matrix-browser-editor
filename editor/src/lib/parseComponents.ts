@@ -28,3 +28,57 @@ export function parseComponents(code: string): ComponentDef[] {
 export function patchComponent(fullCode: string, def: ComponentDef, newComponentCode: string): string {
   return fullCode.slice(0, def.start) + newComponentCode + fullCode.slice(def.end);
 }
+
+export interface PropDef {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'color' | 'unknown';
+  defaultValue: string | number | boolean | null;
+}
+
+// Extract props from first component's destructured parameter signature.
+// Handles: function Foo({ title = 'Hi', count = 0, dark = false }: Props)
+// and:      const Foo = ({ title, count }: Props) =>
+export function extractProps(code: string): PropDef[] {
+  // Find the first destructured parameter block
+  const fnMatch = code.match(/(?:function\s+[A-Z][a-zA-Z0-9]*|const\s+[A-Z][a-zA-Z0-9]*\s*=)\s*\(\s*\{([^}]*)\}/s);
+  if (!fnMatch) return [];
+
+  const body = fnMatch[1];
+  const props: PropDef[] = [];
+
+  // Match: name = defaultValue or just name
+  const propRe = /(\w+)\s*(?:=\s*([^,}\n]+))?/g;
+  let m: RegExpExecArray | null;
+  while ((m = propRe.exec(body)) !== null) {
+    const name = m[1].trim();
+    if (!name || name === 'children') continue;
+    const rawDefault = m[2]?.trim() ?? null;
+
+    let type: PropDef['type'] = 'unknown';
+    let defaultValue: PropDef['defaultValue'] = null;
+
+    if (rawDefault === null) {
+      type = 'string';
+      defaultValue = '';
+    } else if (rawDefault === 'true' || rawDefault === 'false') {
+      type = 'boolean';
+      defaultValue = rawDefault === 'true';
+    } else if (/^-?\d+(\.\d+)?$/.test(rawDefault)) {
+      type = 'number';
+      defaultValue = parseFloat(rawDefault);
+    } else if (/^['"`]#[0-9a-fA-F]{3,8}['"`]$/.test(rawDefault)) {
+      type = 'color';
+      defaultValue = rawDefault.replace(/^['"`]|['"`]$/g, '');
+    } else if (/^['"`]/.test(rawDefault)) {
+      type = 'string';
+      defaultValue = rawDefault.replace(/^['"`]|['"`]$/g, '');
+    } else {
+      type = 'string';
+      defaultValue = '';
+    }
+
+    props.push({ name, type, defaultValue });
+  }
+
+  return props;
+}

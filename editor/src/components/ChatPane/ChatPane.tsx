@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAgentStore } from '../../store/agentStore';
+import { useEditorStore } from '../../store/editorStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { useAgentStream } from '../../hooks/useAgentStream';
 import { MessageList } from './MessageList';
@@ -11,8 +12,10 @@ const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 export function ChatPane() {
   const { messages, isStreaming, streamBuffer, error, clearMessages } = useAgentStore();
   const { activeTemplate, pendingScreenshot, setPendingScreenshot, pendingChatMessage, setPendingChatMessage } = useSessionStore();
+  const { code, componentName } = useEditorStore();
   const { send } = useAgentStream();
   const [swarmEnabled, setSwarmEnabled] = useState(false);
+  const [generatingVariants, setGeneratingVariants] = useState(false);
 
   useEffect(() => {
     fetch(`${SERVER}/api/status`)
@@ -23,6 +26,23 @@ export function ChatPane() {
 
   const handleSend = (prompt: string, image?: string | null) => {
     send({ prompt, templateCode: activeTemplate?.code, screenshotImage: image ?? undefined });
+  };
+
+  const handleVariants = async () => {
+    if (!code.trim() || isStreaming || generatingVariants) return;
+    setGeneratingVariants(true);
+    const variants = [
+      `Create a minimal, clean variant of this component with subtle styling: ${componentName}. Use the same props but a simpler, more understated design.`,
+      `Create a bold, colorful variant of this component: ${componentName}. Use vibrant colors, strong contrast, and expressive typography.`,
+      `Create a dark glassmorphism variant of this component: ${componentName}. Use frosted glass effect, dark background, and subtle glow/blur effects.`,
+    ];
+    for (const prompt of variants) {
+      await new Promise<void>((resolve) => {
+        send({ prompt, templateCode: code });
+        setTimeout(resolve, 500);
+      });
+    }
+    setGeneratingVariants(false);
   };
 
   const status = isStreaming ? 'loading' : error ? 'error' : 'idle';
@@ -49,6 +69,16 @@ export function ChatPane() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <StatusBadge status={status} message={statusMsg} />
+          {code.trim() && (
+            <button
+              onClick={handleVariants}
+              disabled={isStreaming || generatingVariants || !code.trim()}
+              title="Generate 3 style variants of the current component"
+              style={{ background: 'none', border: '1px solid #334155', borderRadius: 4, color: generatingVariants ? '#475569' : '#a5b4fc', cursor: 'pointer', fontSize: 11, padding: '2px 7px' }}
+            >
+              {generatingVariants ? '⏳' : '⚗ Variants'}
+            </button>
+          )}
           {messages.length > 0 && (
             <button
               onClick={clearMessages}

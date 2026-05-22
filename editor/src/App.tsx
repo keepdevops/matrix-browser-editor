@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChatPane } from './components/ChatPane/ChatPane';
 import { PreviewPane } from './components/PreviewPane/PreviewPane';
 import { CodePane } from './components/CodePane/CodePane';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { CanvasPane } from './components/CanvasPane/CanvasPane';
+import { KeyboardHelpModal } from './components/shared/KeyboardHelpModal';
 import { useSessionStore } from './store/sessionStore';
 
 const TAB_BTN = (active: boolean): React.CSSProperties => ({
@@ -28,12 +29,25 @@ const COLLAPSE_BTN: React.CSSProperties = {
 export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { rightTab, setRightTab } = useSessionStore();
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === '?') setShowHelp(h => !h);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const sidebarWidth = sidebarCollapsed ? 44 : 200;
   const chatWidth = chatCollapsed ? 44 : 320;
 
   return (
+    <>
+    {showHelp && <KeyboardHelpModal onClose={() => setShowHelp(false)} />}
     <div style={{
       display: 'grid',
       gridTemplateColumns: `${sidebarWidth}px ${chatWidth}px 1fr`,
@@ -78,6 +92,12 @@ export default function App() {
           <button style={TAB_BTN(rightTab === 'canvas')} onClick={() => setRightTab('canvas')}>
             🧩 Canvas
           </button>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setShowHelp(true)}
+            title="Help & shortcuts (?)"
+            style={{ ...TAB_BTN(false), padding: '6px 12px', fontSize: 13, color: '#475569' }}
+          >?</button>
         </div>
 
         {/* Panes — only the active one is visible; all stay mounted to preserve state */}
@@ -92,5 +112,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    </>
   );
 }
