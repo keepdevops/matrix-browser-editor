@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useHistoryStore, type VersionEntry, type VersionSource } from '../../store/historyStore';
 import { useEditorStore } from '../../store/editorStore';
+import { DiffTooltip } from './DiffTooltip';
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -28,8 +29,9 @@ interface Props {
 
 export function VersionHistoryPanel({ onClose }: Props) {
   const { entries, remove, clear } = useHistoryStore();
-  const { setCode, setComponentName, setLanguage } = useEditorStore();
+  const { code: currentCode, setCode, setComponentName, setLanguage } = useEditorStore();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [hovered, setHovered] = useState<{ entry: VersionEntry; top: number } | null>(null);
 
   const handleRestore = (entry: VersionEntry) => {
     setCode(entry.code);
@@ -77,8 +79,8 @@ export function VersionHistoryPanel({ onClose }: Props) {
             display: 'flex', alignItems: 'center', gap: 8,
             transition: 'background 0.1s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#111827')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          onMouseEnter={e => { e.currentTarget.style.background = '#111827'; setHovered({ entry, top: e.currentTarget.getBoundingClientRect().top }); }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; setHovered(null); }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -111,6 +113,14 @@ export function VersionHistoryPanel({ onClose }: Props) {
           </div>
         ))}
       </div>
+
+      {hovered && (
+        <DiffTooltip
+          oldCode={currentCode}
+          newCode={hovered.entry.code}
+          anchorTop={hovered.top}
+        />
+      )}
     </div>
   );
 }
