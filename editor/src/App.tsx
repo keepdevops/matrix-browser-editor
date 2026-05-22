@@ -5,6 +5,7 @@ import { CodePane } from './components/CodePane/CodePane';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { CanvasPane } from './components/CanvasPane/CanvasPane';
 import { KeyboardHelpModal } from './components/shared/KeyboardHelpModal';
+import { PanelErrorBoundary } from './components/shared/PanelErrorBoundary';
 
 const TOP_H = 44;
 
@@ -101,7 +102,7 @@ export default function App() {
         boxShadow: drawer === 'sidebar' ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
         overflow: 'hidden',
       }}>
-        <Sidebar />
+        <PanelErrorBoundary name="Sidebar"><Sidebar /></PanelErrorBoundary>
       </div>
 
       {/* Chat drawer */}
@@ -115,7 +116,7 @@ export default function App() {
         boxShadow: drawer === 'chat' ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
       }}>
-        <ChatPane />
+        <PanelErrorBoundary name="Chat"><ChatPane /></PanelErrorBoundary>
       </div>
 
       {/* Main app shell */}
@@ -175,12 +176,12 @@ export default function App() {
         {/* Main content */}
         <div ref={containerRef} style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
           {canvasMode ? (
-            <CanvasPane />
+            <PanelErrorBoundary name="Canvas"><CanvasPane /></PanelErrorBoundary>
           ) : (
             <>
               {/* Code pane */}
               <div style={{ width: `${splitPct}%`, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0, flexShrink: 0 }}>
-                <CodePane />
+                <PanelErrorBoundary name="Code"><CodePane /></PanelErrorBoundary>
               </div>
 
               {/* Draggable divider */}
@@ -193,7 +194,7 @@ export default function App() {
 
               {/* Preview pane */}
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <PreviewPane />
+                <PanelErrorBoundary name="Preview"><PreviewPane /></PanelErrorBoundary>
               </div>
             </>
           )}
