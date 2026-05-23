@@ -144,7 +144,7 @@ if (typeof window.__Component === 'function') {
   ${cdnTags}
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script>Babel.registerPreset('tsx',{presets:[[Babel.availablePresets['typescript'],{allExtensions:true,isTSX:true}],Babel.availablePresets['react']]});</script>
-  <style>*{box-sizing:border-box}body{margin:0;padding:1rem;font-family:sans-serif;background:${bg};color:${fg}}</style>
+  <style>*{box-sizing:border-box}body{margin:0;padding:0;font-family:sans-serif;background:${bg};color:${fg}}#root{min-height:100%;display:flex;flex-direction:column}</style>
   <script>${CONSOLE_SCRIPT}</script>
 </head>
 <body>

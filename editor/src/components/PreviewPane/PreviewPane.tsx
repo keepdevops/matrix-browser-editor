@@ -267,7 +267,7 @@ export function PreviewPane() {
             </div>
           ) : (
             <div style={{
-              flex: 1, overflow: 'hidden', display: 'flex',
+              flex: 1, overflow: 'auto',
               transformOrigin: 'top center',
               transform: (!splitView && zoom !== 100) ? `scale(${zoom / 100})` : undefined,
               ...((!splitView && zoom !== 100) ? { height: `${10000 / zoom}%` } : {}),
@@ -277,14 +277,14 @@ export function PreviewPane() {
                 title="Component Preview"
                 sandbox="allow-scripts"
                 style={{
-                  flex: 1,
+                  display: 'block',
                   width: (!splitView && viewportWidth > 0) ? viewportWidth : '100%',
+                  minWidth: (!splitView && viewportWidth === 0) ? 600 : undefined,
                   height: splitView ? undefined : '100%',
                   minHeight: splitView ? undefined : '100%',
                   border: (!splitView && viewportWidth > 0) ? '1px solid #334155' : 'none',
                   borderTop: 'none',
                   ...bgStyle,
-                  flexShrink: 0,
                   cursor: inspectMode ? 'crosshair' : undefined,
                 }}
               />
