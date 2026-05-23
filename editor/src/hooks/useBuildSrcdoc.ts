@@ -127,9 +127,12 @@ class ErrorBoundary extends React.Component {
   }
 }
 const __demoProps = ${JSON.stringify(demoProps).replace(/"function\(\)\{\}"/g, 'function(){}')};
-ReactDOM.createRoot(document.getElementById('root')).render(
-  React.createElement(ErrorBoundary,null,React.createElement(window.__Component,__demoProps))
-);`;
+const __root = ReactDOM.createRoot(document.getElementById('root'));
+if (typeof window.__Component === 'function') {
+  __root.render(React.createElement(ErrorBoundary,null,React.createElement(window.__Component,__demoProps)));
+} else {
+  __root.render(React.createElement('div',{style:{padding:'16px',color:'#475569',fontFamily:'monospace',fontSize:13}},'No component exported yet.'));
+}`;
 
   return `<!DOCTYPE html>
 <html lang="en" class="${darkClass}">
