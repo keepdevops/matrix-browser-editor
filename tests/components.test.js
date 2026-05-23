@@ -1,6 +1,6 @@
 /**
- * React component interaction tests.
- * Clicks buttons, fills inputs, verifies DOM responses.
+ * Editor UI interaction tests.
+ * Verifies header tabs, sidebar templates, code editor, and preview pane controls.
  */
 const { BrowserSession } = require('../lib/browser');
 const { Reporter }       = require('../lib/reporter');
@@ -12,31 +12,128 @@ async function run() {
   try {
     await b.launch({ headless: true });
     await b.goto('/');
+    await b.afterReact(800);
 
-    r.section('Header controls');
+    // ── App shell ────────────────────────────────────────────────────────────
+    r.section('App shell');
 
-    const modeSelect = await b.exists('select.mode-selector, select[title*="mode" i], .mode-selector select');
-    r.info(`Mode selector present: ${modeSelect}`);
+    const chatTab = await b.exists('text=Chat');
+    if (chatTab) r.pass('Chat tab rendered');
+    else r.fail('Chat tab rendered', 'Chat tab text not found');
 
-    const configBtn = await b.exists('button.configure-button');
-    if (configBtn) {
-      r.pass('CONFIGURE button found');
-      await b.click('button.configure-button');
-      const panelShown = await b.exists('.swarm-config, .sc-container, [class*="config"]');
-      if (panelShown) r.pass('Config panel toggles open on click');
-      else r.fail('Config panel toggles open on click', 'no config panel element found');
-      const shot1 = await b.screenshot('config-open');
-      r.screenshot(shot1);
+    const shot0 = await b.screenshot('00-default');
+    r.screenshot(shot0);
 
-      await b.click('button.configure-button');
-      r.info('Config panel toggled closed');
-    } else {
-      r.fail('CONFIGURE button found', 'button.configure-button not in DOM');
+    // ── Sidebar: template library ─────────────────────────────────────────────
+    r.section('Sidebar template library');
+
+    // Open sidebar via hamburger
+    const hamburger = await b.exists('button');
+    if (hamburger) {
+      await b.eval(() => {
+        // Click the first button in the header (hamburger)
+        const btns = document.querySelectorAll('button');
+        for (const btn of btns) {
+          const rect = btn.getBoundingClientRect();
+          if (rect.top < 50) { btn.click(); return; }
+        }
+      });
+      await b.afterReact(500);
     }
 
+    const templateSection = await b.exists('text=TEMPLATES');
+    if (templateSection) r.pass('Sidebar opens with template library');
+    else r.fail('Sidebar opens with template library', 'TEMPLATES heading not found');
+
+    const analyticsTpl = await b.exists('text=Analytics Dashboard');
+    if (analyticsTpl) r.pass('Analytics Dashboard template listed');
+    else r.fail('Analytics Dashboard template listed', 'text not found');
+
+    const adminTpl = await b.exists('text=Admin Dashboard');
+    if (adminTpl) r.pass('Admin Dashboard template listed');
+    else r.fail('Admin Dashboard template listed', 'text not found');
+
+    // ── Template loading ──────────────────────────────────────────────────────
+    r.section('Template loading');
+
+    // Click Analytics Dashboard
+    await b.eval(() => {
+      const els = Array.from(document.querySelectorAll('p, span, div'));
+      const el = els.find(e => e.textContent.trim() === 'Analytics Dashboard');
+      if (el) el.click();
+    });
+    await b.afterReact(2500);
+
+    const editorHasCode = await b.eval(() => {
+      const lines = document.querySelectorAll('.view-line, .cm-line');
+      return lines.length > 0;
+    });
+    if (editorHasCode) r.pass('Analytics Dashboard code loaded into editor');
+    else r.fail('Analytics Dashboard code loaded into editor', 'no editor lines found');
+
+    const shot1 = await b.screenshot('analytics-dashboard');
+    r.screenshot(shot1);
+
+    // Click Admin Dashboard
+    await b.eval(() => {
+      const els = Array.from(document.querySelectorAll('p, span, div'));
+      const el = els.find(e => e.textContent.trim() === 'Admin Dashboard');
+      if (el) el.click();
+    });
+    await b.afterReact(2500);
+
+    const shot2 = await b.screenshot('admin-dashboard');
+    r.screenshot(shot2);
+
+    const previewIframe = await b.exists('iframe[title="Component Preview"]');
+    if (previewIframe) r.pass('Preview iframe present after template load');
+    else r.fail('Preview iframe present after template load', 'iframe not found');
+
+    // ── Preview pane controls ─────────────────────────────────────────────────
+    r.section('Preview pane controls');
+
+    const livePreviewLabel = await b.exists('text=LIVE PREVIEW');
+    if (livePreviewLabel) r.pass('LIVE PREVIEW label present');
+    else r.fail('LIVE PREVIEW label present', 'not found');
+
+    // Zoom buttons (75, 100, 125, 150)
+    const zoom75 = await b.exists('button[title="75% zoom"]');
+    if (zoom75) r.pass('Zoom controls present');
+    else r.fail('Zoom controls present', 'no zoom buttons found');
+
+    // Themes toggle
+    const themesBtn = await b.exists('button[title*="theme" i], button[title*="Theme" i]');
+    if (themesBtn) r.pass('Themes toggle button present');
+    else r.fail('Themes toggle button present', 'not found');
+
+    // Inspect button
+    const inspectBtn = await b.exists('button[title*="inspect" i], button[title*="Inspect" i]');
+    if (inspectBtn) r.pass('Inspect button present');
+    else r.fail('Inspect button present', 'not found');
+
+    // ── Prompt input ──────────────────────────────────────────────────────────
     r.section('Prompt input');
-    const promptArea = await b.exists('textarea, input[type="text"][placeholder]');
-    if (promptArea) {
+
+    // Close sidebar first so prompt input is accessible
+    await b.eval(() => {
+      const btns = document.querySelectorAll('button');
+      for (const btn of btns) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.top < 50) { btn.click(); return; }
+      }
+    });
+    await b.afterReact(400);
+
+    // Click Chat tab if present
+    await b.eval(() => {
+      const tabs = Array.from(document.querySelectorAll('[class*="tab"]'));
+      const chatTab = tabs.find(t => t.textContent.includes('Chat'));
+      if (chatTab) chatTab.click();
+    });
+    await b.afterReact(400);
+
+    const promptInput = await b.exists('textarea, input[type="text"][placeholder]');
+    if (promptInput) {
       r.pass('Prompt input present');
       const sel = (await b.exists('textarea')) ? 'textarea' : 'input[type="text"]';
       await b.type(sel, 'hello from browser automation');
@@ -46,70 +143,24 @@ async function run() {
       });
       if (val && val.includes('hello')) r.pass('Typing into prompt input works', `value="${val.slice(0, 40)}"`);
       else r.fail('Typing into prompt input works', `value="${val}"`);
-      const shot2 = await b.screenshot('prompt-typed');
-      r.screenshot(shot2);
+      const shot3 = await b.screenshot('prompt-typed');
+      r.screenshot(shot3);
     } else {
       r.fail('Prompt input present', 'no textarea or text input found');
     }
 
-    r.section('Help modal');
-    const helpBtn = await b.exists('button.help-button');
-    if (helpBtn) {
-      r.pass('Help button found');
-      await b.click('button.help-button');
-      const modalShown = await b.exists('.help-modal, [class*="help"]');
-      if (modalShown) r.pass('Help modal opens on click');
-      else r.fail('Help modal opens on click', 'no .help-modal found');
-      const shot3 = await b.screenshot('help-modal');
-      r.screenshot(shot3);
-    } else {
-      r.fail('Help button found', 'button.help-button not in DOM');
-    }
+    // ── Console errors ────────────────────────────────────────────────────────
+    r.section('Console errors');
 
-    r.section('Layout-specific: Neo');
-    await b.selectByValue('select[aria-label="Layout"]', 'neo');
-    const neoNav = await b.exists('.neo-nav');
-    if (neoNav) r.pass('Neo layout: .neo-nav sidebar rendered');
-    else r.fail('Neo layout: .neo-nav sidebar rendered', '.neo-nav not found');
-
-    const neoAgents = await b.exists('.neo-agents');
-    if (neoAgents) r.pass('Neo layout: .neo-agents panel rendered');
-    else r.fail('Neo layout: .neo-agents panel rendered', '.neo-agents not found');
-
-    const collapseBtn = await b.exists('.neo-collapse-btn');
-    if (collapseBtn) {
-      await b.click('.neo-collapse-btn');
-      const collapsed = await b.exists('.neo-body--nav-collapsed');
-      if (collapsed) r.pass('Neo layout: nav collapse button works');
-      else r.fail('Neo layout: nav collapse button works', '.neo-body--nav-collapsed not applied');
-      const shot4 = await b.screenshot('neo-collapsed');
-      r.screenshot(shot4);
-    }
-
-    r.section('Layout-specific: Operator');
-    await b.selectByValue('select[aria-label="Layout"]', 'operator');
-    const opTopband = await b.exists('.op-topband');
-    if (opTopband) r.pass('Operator layout: .op-topband rendered');
-    else r.fail('Operator layout: .op-topband rendered', '.op-topband not found');
-    const shot5 = await b.screenshot('operator');
-    r.screenshot(shot5);
-
-    r.section('Layout-specific: Results');
-    await b.selectByValue('select[aria-label="Layout"]', 'results');
-    const rlHeader = await b.exists('.rl-header');
-    if (rlHeader) r.pass('Results layout: .rl-header rendered');
-    else r.fail('Results layout: .rl-header rendered', '.rl-header not found');
-    const shot6 = await b.screenshot('results');
-    r.screenshot(shot6);
-
-    r.section('Console errors check');
-    const allLogs = b.flushLogs();
-    const jsErrors = allLogs.filter(l =>
+    const jsErrors = b.flushLogs().filter(l =>
       (l.type === 'pageerror' || l.type === 'error') &&
-      !l.text.includes('503') && !l.text.includes('Failed to fetch') && !l.text.includes('fetchAgents') && !l.text.includes('loadHistory')
+      !l.text.includes('Failed to fetch') &&
+      !l.text.includes('api/status') &&
+      !l.text.includes('fetchAgents') &&
+      !l.text.includes('loadHistory')
     );
-    if (jsErrors.length === 0) r.pass('No JS errors across all tests');
-    else r.fail('No JS errors across all tests', jsErrors.map(e => e.text).join('\n    '));
+    if (jsErrors.length === 0) r.pass('No unexpected JS errors');
+    else r.fail('No unexpected JS errors', jsErrors.map(e => e.text).join('\n    '));
 
   } catch (err) {
     r.fail('Test runner crashed', err.message);

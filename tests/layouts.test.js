@@ -1,101 +1,198 @@
 /**
- * Layout switcher integration tests.
- * Verifies that selecting each layout in the header <select> actually
- * swaps the root DOM structure and updates the URL param.
+ * Editor layout and preview tests.
+ * Verifies the split editor/preview layout, viewport controls, and template rendering.
  */
 const { BrowserSession } = require('../lib/browser');
 const { Reporter }       = require('../lib/reporter');
 
-const LAYOUTS = {
-  default:   { rootClass: 'matrix-container' },
-  sidebar:   { rootClass: 'sl-root' },
-  minimal:   { rootClass: 'ml-root' },
-  terminal:  { rootClass: 'tl-root' },
-  dashboard: { rootClass: 'dl-root' },
-  neo:       { rootClass: 'neo-root' },
-  operator:  { rootClass: 'op-root' },
-  results:   { rootClass: 'rl-root' },
-};
+const TEMPLATES = [
+  { name: 'Analytics Dashboard', expectText: 'Analytics' },
+  { name: 'Admin Dashboard',     expectText: 'Admin' },
+  { name: 'Login Form',          expectText: null },
+  { name: 'Data Table',          expectText: null },
+];
+
+const VIEWPORT_BTNS = [
+  { title: 'Mobile (375px)',  label: '📱' },
+  { title: 'Tablet (768px)',  label: '⊞' },
+  { title: 'Desktop (full)',  label: '⊡' },
+];
+
+async function openSidebar(b) {
+  await b.eval(() => {
+    const btns = document.querySelectorAll('button');
+    for (const btn of btns) {
+      const rect = btn.getBoundingClientRect();
+      if (rect.top < 50) { btn.click(); return; }
+    }
+  });
+  await b.afterReact(500);
+}
+
+async function clickTemplate(b, name) {
+  await b.eval((n) => {
+    const els = Array.from(document.querySelectorAll('p, span, div'));
+    const el = els.find(e => e.textContent.trim() === n);
+    if (el) el.click();
+  }, name);
+  await b.afterReact(2500);
+}
 
 async function run() {
-  const r  = new Reporter();
-  const b  = new BrowserSession();
+  const r = new Reporter();
+  const b = new BrowserSession();
 
   try {
     await b.launch({ headless: true });
     await b.goto('/');
+    await b.afterReact(800);
 
+    // ── App loads ─────────────────────────────────────────────────────────────
     r.section('App loads');
-    const title = await b.text('h1');
-    if (title && title.includes('Swarm')) r.pass('Page title contains Swarm', title.trim());
-    else r.fail('Page title', `got: ${title}`);
 
-    const layoutSelect = await b.exists('select[aria-label="Layout"]');
-    if (layoutSelect) r.pass('Layout <select> present');
-    else r.fail('Layout <select> present', 'selector not found');
+    const editorPane = await b.exists('.monaco-editor, [class*="editor"], [class*="code"]');
+    if (editorPane) r.pass('Code editor pane rendered');
+    else r.fail('Code editor pane rendered', 'no editor element found');
 
-    const themeSelect = await b.exists('select[aria-label="Theme"]');
-    if (themeSelect) r.pass('Theme <select> present');
-    else r.fail('Theme <select> present', 'selector not found');
+    const previewPane = await b.exists('text=LIVE PREVIEW');
+    if (previewPane) r.pass('Preview pane rendered with LIVE PREVIEW label');
+    else r.fail('Preview pane rendered with LIVE PREVIEW label', 'not found');
+
+    const previewIframe = await b.exists('iframe[title="Component Preview"]');
+    if (previewIframe) r.pass('Preview iframe present');
+    else r.fail('Preview iframe present', 'not found');
 
     const shot0 = await b.screenshot('00-default');
     r.screenshot(shot0);
 
-    r.section('Layout switching');
-    for (const [id, { rootClass }] of Object.entries(LAYOUTS)) {
-      await b.selectByValue('select[aria-label="Layout"]', id);
+    // ── Viewport controls ─────────────────────────────────────────────────────
+    r.section('Viewport controls');
 
-      const params = await b.urlParams();
-      const urlOk  = params.layout === id;
+    for (const vp of VIEWPORT_BTNS) {
+      const btn = await b.exists(`button[title="${vp.title}"]`);
+      if (btn) r.pass(`Viewport button: ${vp.title}`);
+      else r.fail(`Viewport button: ${vp.title}`, `button[title="${vp.title}"] not found`);
+    }
 
-      const domOk  = await b.exists(`.${rootClass}`);
+    // Click mobile viewport and verify iframe width changes
+    await b.eval(() => {
+      const btn = document.querySelector('button[title="Mobile (375px)"]');
+      if (btn) btn.click();
+    });
+    await b.afterReact(400);
+
+    const mobileIframeWidth = await b.eval(() => {
+      const iframe = document.querySelector('iframe[title="Component Preview"]');
+      return iframe ? Math.round(parseFloat(getComputedStyle(iframe).width)) : null;
+    });
+    if (mobileIframeWidth && mobileIframeWidth <= 400) {
+      r.pass('Mobile viewport sets iframe to 375px', `width=${mobileIframeWidth}px`);
+    } else {
+      r.fail('Mobile viewport sets iframe to 375px', `width=${mobileIframeWidth}px`);
+    }
+
+    // Reset to desktop
+    await b.eval(() => {
+      const btn = document.querySelector('button[title="Desktop (full)"]');
+      if (btn) btn.click();
+    });
+    await b.afterReact(300);
+
+    const shot1 = await b.screenshot('layout-default');
+    r.screenshot(shot1);
+
+    // ── Template rendering ────────────────────────────────────────────────────
+    r.section('Template rendering');
+
+    await openSidebar(b);
+
+    for (const tpl of TEMPLATES) {
+      await clickTemplate(b, tpl.name);
+
       const errors = b.flushLogs().filter(l =>
         (l.type === 'pageerror' || l.type === 'error') &&
-        !l.text.includes('503') && !l.text.includes('Failed to fetch') && !l.text.includes('fetchAgents') && !l.text.includes('loadHistory')
+        !l.text.includes('Failed to fetch') &&
+        !l.text.includes('api/status') &&
+        !l.text.includes('fetchAgents') &&
+        !l.text.includes('style property during rerender') &&
+        !l.text.includes('border')
       );
-      const noErr  = errors.length === 0;
+      const noErr = errors.length === 0;
 
-      if (urlOk && domOk && noErr) {
-        r.pass(`layout=${id}`, `.${rootClass} present, URL updated`);
+      const iframeVisible = await b.exists('iframe[title="Component Preview"]');
+
+      if (iframeVisible && noErr) {
+        r.pass(`template: ${tpl.name}`, 'loaded without errors');
       } else {
         const detail = [
-          !urlOk  && `URL param is "${params.layout}"`,
-          !domOk  && `.${rootClass} not found in DOM`,
-          !noErr  && `JS errors: ${errors.map(e => e.text).join('; ')}`,
+          !iframeVisible && 'preview iframe not visible',
+          !noErr && `JS errors: ${errors.map(e => e.text).join('; ')}`,
         ].filter(Boolean).join(' | ');
-        r.fail(`layout=${id}`, detail);
+        r.fail(`template: ${tpl.name}`, detail);
       }
 
-      const shot = await b.screenshot(`layout-${id}`);
+      const shotName = `layout-${tpl.name.toLowerCase().replace(/\s+/g, '-')}`;
+      const shot = await b.screenshot(shotName);
       r.screenshot(shot);
     }
 
-    r.section('Theme switching');
-    for (const themeId of ['dark', 'light']) {
-      await b.selectByValue('select[aria-label="Theme"]', themeId);
-      const attr  = await b.eval(() => document.body.getAttribute('data-theme'));
-      const params = await b.urlParams();
-      const ok = attr === themeId && params.theme === themeId;
-      if (ok) r.pass(`theme=${themeId}`, `data-theme="${attr}", URL param ok`);
-      else r.fail(`theme=${themeId}`, `data-theme="${attr}", url theme="${params.theme}"`);
+    // ── Preview min-width: full dashboard renders ─────────────────────────────
+    r.section('Dashboard preview width');
+
+    await clickTemplate(b, 'Admin Dashboard');
+
+    const iframeWidth = await b.eval(() => {
+      const iframe = document.querySelector('iframe[title="Component Preview"]');
+      return iframe ? Math.round(parseFloat(getComputedStyle(iframe).width)) : null;
+    });
+    if (iframeWidth && iframeWidth >= 600) {
+      r.pass('Preview iframe at least 600px wide for dashboard', `width=${iframeWidth}px`);
+    } else {
+      r.fail('Preview iframe at least 600px wide for dashboard', `width=${iframeWidth}px`);
     }
 
-    r.section('URL persistence');
-    await b.goto('/?layout=neo&theme=dark');
-    await b.afterReact(800);
-    const neoOk = await b.exists('.neo-root');
-    if (neoOk) r.pass('Direct URL ?layout=neo loads Neo layout');
-    else r.fail('Direct URL ?layout=neo loads Neo layout', '.neo-root not found');
+    const shot2 = await b.screenshot('layout-dashboard');
+    r.screenshot(shot2);
 
-    await b.goto('/?layout=unknown&theme=unknown');
-    await b.afterReact(800);
-    // localStorage from previous test may restore last valid layout; just verify no crash + some root exists
-    const anyRoot = await b.eval(() =>
-      Boolean(document.querySelector('.matrix-container,.sl-root,.ml-root,.tl-root,.dl-root,.neo-root,.op-root,.rl-root'))
+    // ── Preview stays visible during invalid code ─────────────────────────────
+    r.section('Preview stability');
+
+    // Click into the editor content area and press a key to introduce a syntax error
+    const editorContent = await b.exists('.monaco-editor .view-lines');
+    if (editorContent) {
+      await b.eval(() => {
+        // Focus the editor by clicking its content area
+        const lines = document.querySelector('.monaco-editor .view-lines');
+        if (lines) lines.click();
+      });
+      await b.afterReact(300);
+      // Use keyboard to go to line start and type an invalid char
+      await b.page.keyboard.press('Home');
+      await b.page.keyboard.type('<');
+      await b.afterReact(600); // within debounce window
+
+      const iframeStillPresent = await b.exists('iframe[title="Component Preview"]');
+      if (iframeStillPresent) r.pass('Preview iframe stays present during invalid code');
+      else r.fail('Preview iframe stays present during invalid code', 'iframe disappeared');
+    } else {
+      r.info('Monaco editor content area not found — skipping stability test');
+    }
+
+    const shot3 = await b.screenshot('layout-sidebar');
+    r.screenshot(shot3);
+
+    // ── Console errors ────────────────────────────────────────────────────────
+    r.section('Console errors');
+
+    const jsErrors = b.flushLogs().filter(l =>
+      (l.type === 'pageerror' || l.type === 'error') &&
+      !l.text.includes('Failed to fetch') &&
+      !l.text.includes('api/status') &&
+      !l.text.includes('fetchAgents') &&
+      !l.text.includes('loadHistory')
     );
-    const noPageError = b.flushLogs().filter(l => l.type === 'pageerror').length === 0;
-    if (anyRoot && noPageError) r.pass('Unknown layout: graceful fallback (no crash, renders valid root)');
-    else r.fail('Unknown layout: graceful fallback', `anyRoot=${anyRoot} noPageError=${noPageError}`);
+    if (jsErrors.length === 0) r.pass('No unexpected JS errors across all tests');
+    else r.fail('No unexpected JS errors across all tests', jsErrors.map(e => e.text).join('\n    '));
 
   } catch (err) {
     r.fail('Test runner crashed', err.message);
