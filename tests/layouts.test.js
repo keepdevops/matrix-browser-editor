@@ -114,8 +114,7 @@ async function run() {
         !l.text.includes('Failed to fetch') &&
         !l.text.includes('api/status') &&
         !l.text.includes('fetchAgents') &&
-        !l.text.includes('style property during rerender') &&
-        !l.text.includes('border')
+        !l.text.includes('style property during rerender')
       );
       const noErr = errors.length === 0;
 
