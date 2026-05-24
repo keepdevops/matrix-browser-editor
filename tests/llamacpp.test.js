@@ -63,9 +63,9 @@ async function run() {
     if ('llamaCppUrl' in body) r.pass('Response has llamaCppUrl field');
     else r.fail('Response has llamaCppUrl field', 'missing');
 
-    // Without LLAMA_CPP_URL set, enabled should be false
-    if (body.llamaCppEnabled === false) r.pass('llamaCppEnabled=false when LLAMA_CPP_URL not set');
-    else r.info(`llamaCppEnabled=${body.llamaCppEnabled} (LLAMA_CPP_URL may be configured)`);
+    // llamaCppEnabled reflects whether LLAMA_CPP_URL is configured
+    if (typeof body.llamaCppEnabled === 'boolean') r.pass('llamaCppEnabled is a boolean', `value=${body.llamaCppEnabled}`);
+    else r.fail('llamaCppEnabled is a boolean', `got ${typeof body.llamaCppEnabled}`);
   } catch (err) {
     r.fail('GET /api/status', err.message);
   }

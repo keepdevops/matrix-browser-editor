@@ -1,17 +1,12 @@
 import React, { useRef, useCallback } from 'react';
 import { useImageCrop } from '../../hooks/useImageCrop';
+import { Button } from '../shared/Button';
 
 interface Props {
   src: string;
   onClose: () => void;
   onUseInPrompt: (dataUrl: string) => void;
 }
-
-const BTN: React.CSSProperties = {
-  padding: '5px 12px', borderRadius: 6, border: '1px solid #334155',
-  background: '#1e293b', color: '#94a3b8', cursor: 'pointer', fontSize: 12,
-};
-const BTN_PRIMARY: React.CSSProperties = { ...BTN, background: '#4f46e5', borderColor: '#6366f1', color: '#fff' };
 
 async function copyToClipboard(dataUrl: string) {
   try {
@@ -83,15 +78,15 @@ export function ImageEditorModal({ src, onClose, onUseInPrompt }: Props) {
           <span style={{ fontSize: 11, color: '#64748b' }}>{hasCrop ? 'Box selection active — drag to reselect' : 'Drag to select a region'}</span>
           <div style={{ flex: 1 }} />
           {hasCrop && (
-            <button onClick={clearSelection} style={BTN} title="Clear selection">✕ Clear crop</button>
+            <Button size="sm" onClick={clearSelection} title="Clear selection">✕ Clear crop</Button>
           )}
-          <button onClick={handleCopy} style={BTN} title="Copy to clipboard">📋 Copy</button>
-          <button onClick={handleSave} style={BTN} title="Save PNG">↓ Save</button>
-          <button onClick={handleSaveAs} style={BTN} title="Save with custom name">↓ Save As…</button>
-          <button onClick={handleUse} style={BTN_PRIMARY} title="Attach to chat prompt">
+          <Button size="sm" onClick={handleCopy} title="Copy to clipboard">📋 Copy</Button>
+          <Button size="sm" onClick={handleSave} title="Save PNG">↓ Save</Button>
+          <Button size="sm" onClick={handleSaveAs} title="Save with custom name">↓ Save As…</Button>
+          <Button size="sm" variant="secondary" onClick={handleUse} title="Attach to chat prompt">
             ✏ Use in Prompt{hasCrop ? ' (cropped)' : ''}
-          </button>
-          <button onClick={onClose} style={BTN}>✕ Close</button>
+          </Button>
+          <Button size="sm" onClick={onClose}>✕ Close</Button>
         </div>
 
         {/* Image canvas area */}

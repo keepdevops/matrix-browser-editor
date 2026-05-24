@@ -1,3 +1,46 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
+@plugin "tailwindcss-animate";
+@plugin "daisyui" {
+  themes: dark, cyberpunk;
+}
+
+@theme {
+  /* Neon accent palette */
+  --color-neon-green:  #22c55e;
+  --color-neon-blue:   #3b82f6;
+  --color-neon-orange: #f59e0b;
+
+  /* Emerald scale */
+  --color-emerald-400: #4ade80;
+  --color-emerald-500: #22c55e;
+  --color-emerald-600: #16a34a;
+  --color-emerald-700: #15803d;
+
+  /* Blue scale */
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+
+  /* Orange scale */
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f59e0b;
+  --color-orange-600: #d97706;
+  --color-orange-700: #b45309;
+
+  /* Red scale */
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+
+  /* Extended radius */
+  --radius-3xl: 1.25rem;
+}
+
+/* Custom variants */
+@variant router (&[data-mode="router"]);
+@variant neon (&.neon);
+
 * { box-sizing: border-box; }
 
 :root {
@@ -25,6 +68,21 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+
+  /* Button tokens */
+  --btn-height: 36px;
+  --btn-height-sm: 32px;
+  --btn-height-xs: 24px;
+  --btn-radius: 6px;
+  --btn-padding-x: var(--space-md);
+  --btn-padding-x-sm: 12px;
+  --btn-font-size: var(--font-size-sm);
+  --btn-bg: rgba(255, 255, 255, 0.05);
+  --btn-border: rgba(255, 255, 255, 0.1);
+  --btn-color: #ffffff;
+  --btn-bg-primary: var(--color-status-success);
+  --btn-bg-secondary: var(--color-status-info);
+  --btn-bg-warning: var(--color-status-warning);
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
   --font-size-xs: 11px;
@@ -43,6 +101,48 @@ html, body, #root {
   color: #f1f5f9;
   font-family: var(--font-sans);
 }
+
+/* === Button system === */
+.swarm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--btn-height);
+  padding: 0 var(--btn-padding-x);
+  font-size: var(--btn-font-size);
+  font-weight: 500;
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 80px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.swarm-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+.swarm-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+.swarm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.swarm-btn-primary   { background: var(--btn-bg-primary);   border-color: var(--btn-bg-primary);   color: #000; font-weight: 600; }
+.swarm-btn-secondary { background: var(--btn-bg-secondary);  border-color: var(--btn-bg-secondary); }
+.swarm-btn-warning   { background: var(--btn-bg-warning);    border-color: var(--btn-bg-warning);   color: #000; }
+
+.swarm-btn-sm   { height: var(--btn-height-sm); padding: 0 var(--btn-padding-x-sm); min-width: 60px; }
+.swarm-btn-xs   { height: var(--btn-height-xs); padding: 0 var(--btn-padding-x-sm); min-width: 0;   font-size: var(--font-size-xs); }
+.swarm-btn-icon { width: var(--btn-height); min-width: var(--btn-height); padding: 0; }
 
 /* legacy vite vars kept for compat */
 :root {

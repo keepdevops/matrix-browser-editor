@@ -7,33 +7,9 @@ import { CanvasPane } from './components/CanvasPane/CanvasPane';
 import { KeyboardHelpModal } from './components/shared/KeyboardHelpModal';
 import { PanelErrorBoundary } from './components/shared/PanelErrorBoundary';
 import { useShareLoader } from './hooks/useShareLoader';
+import { Button } from './components/shared/Button';
 
 const TOP_H = 44;
-
-const NAV_BTN = (active = false): React.CSSProperties => ({
-  padding: '5px 12px',
-  background: active ? '#1e293b' : 'transparent',
-  border: 'none',
-  borderRadius: 6,
-  color: active ? '#f1f5f9' : '#475569',
-  cursor: 'pointer',
-  fontSize: 12,
-  fontWeight: active ? 600 : 400,
-  whiteSpace: 'nowrap' as const,
-  letterSpacing: '0.03em',
-  transition: 'all 0.12s',
-});
-
-const ICON_BTN: React.CSSProperties = {
-  padding: '5px 10px',
-  background: 'transparent',
-  border: 'none',
-  color: '#475569',
-  cursor: 'pointer',
-  fontSize: 15,
-  borderRadius: 6,
-  lineHeight: 1,
-};
 
 type Drawer = 'sidebar' | 'chat' | null;
 
@@ -138,41 +114,48 @@ export default function App() {
           gap: 4,
         }}>
           {/* Left: drawer toggles */}
-          <button
+          <Button
+            size="icon"
             onClick={() => toggle('sidebar')}
             title="Tools & Settings"
-            style={{ ...ICON_BTN, color: drawer === 'sidebar' ? '#a5b4fc' : '#475569', fontSize: 18 }}
+            variant={drawer === 'sidebar' ? 'secondary' : 'default'}
+            className="text-lg border-0 bg-transparent"
           >
             ☰
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={() => toggle('chat')}
             title="AI Chat"
-            style={{ ...NAV_BTN(drawer === 'chat') }}
+            variant={drawer === 'chat' ? 'secondary' : 'default'}
+            className="border-0"
           >
             💬 Chat
-          </button>
+          </Button>
 
           <div style={{ width: 1, height: 20, background: '#1e293b', margin: '0 4px' }} />
 
           {/* Canvas mode */}
-          <button
+          <Button
+            size="sm"
             onClick={() => { setCanvasMode(c => !c); setDrawer(null); }}
-            style={{ ...NAV_BTN(canvasMode) }}
+            variant={canvasMode ? 'secondary' : 'default'}
+            className="border-0"
           >
             🧩 Canvas
-          </button>
+          </Button>
 
           <div style={{ flex: 1 }} />
 
           {/* Right: help */}
-          <button
+          <Button
+            size="icon"
             onClick={() => setShowHelp(true)}
             title="Help & shortcuts (?)"
-            style={{ ...ICON_BTN, fontSize: 14, color: '#475569' }}
+            className="text-sm text-slate-500 bg-transparent border-0"
           >
             ?
-          </button>
+          </Button>
         </div>
 
         {/* Share load banner */}

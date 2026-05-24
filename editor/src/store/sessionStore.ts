@@ -35,7 +35,7 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   sidebarTab: 'templates',
   pendingScreenshot: null,
   pendingChatMessage: null,
-  preferredBackend: 'auto',
+  preferredBackend: 'llamacpp',
 
   setStyleSystem: (styleSystem) => set({ styleSystem }),
   setTheme: (theme) => set({ theme }),
