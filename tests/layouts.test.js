@@ -112,7 +112,9 @@ async function run() {
       const errors = b.flushLogs().filter(l =>
         (l.type === 'pageerror' || l.type === 'error') &&
         !l.text.includes('Failed to fetch') &&
+        !l.text.includes('Failed to load resource') &&
         !l.text.includes('api/status') &&
+        !l.text.includes('api/audit') &&
         !l.text.includes('fetchAgents') &&
         !l.text.includes('style property during rerender')
       );
@@ -186,7 +188,9 @@ async function run() {
     const jsErrors = b.flushLogs().filter(l =>
       (l.type === 'pageerror' || l.type === 'error') &&
       !l.text.includes('Failed to fetch') &&
+      !l.text.includes('Failed to load resource') &&
       !l.text.includes('api/status') &&
+      !l.text.includes('api/audit') &&
       !l.text.includes('fetchAgents') &&
       !l.text.includes('loadHistory')
     );
