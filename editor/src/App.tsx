@@ -6,6 +6,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { CanvasPane } from './components/CanvasPane/CanvasPane';
 import { KeyboardHelpModal } from './components/shared/KeyboardHelpModal';
 import { PanelErrorBoundary } from './components/shared/PanelErrorBoundary';
+import { useShareLoader } from './hooks/useShareLoader';
 
 const TOP_H = 44;
 
@@ -43,6 +44,7 @@ export default function App() {
   const [splitPct, setSplitPct] = useState(50);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { status: shareStatus, error: shareError } = useShareLoader();
 
   const toggle = (d: Drawer) => setDrawer(prev => prev === d ? null : d);
 
@@ -172,6 +174,18 @@ export default function App() {
             ?
           </button>
         </div>
+
+        {/* Share load banner */}
+        {shareStatus === 'loading' && (
+          <div style={{ padding: '6px 16px', background: '#1e3a5f', borderBottom: '1px solid #3b82f6', fontSize: 12, color: '#93c5fd' }}>
+            ⏳ Loading shared component…
+          </div>
+        )}
+        {shareStatus === 'error' && (
+          <div style={{ padding: '6px 16px', background: '#450a0a', borderBottom: '1px solid #dc2626', fontSize: 12, color: '#fca5a5' }}>
+            ✗ Could not load share: {shareError}
+          </div>
+        )}
 
         {/* Main content */}
         <div ref={containerRef} style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>

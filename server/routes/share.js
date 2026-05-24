@@ -3,11 +3,33 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const router = Router();
 
-// In-memory store; survives server restarts only until restart
-const shares = new Map();
+const STORE_PATH = path.join(__dirname, '..', 'shares.json');
+
+function loadStore() {
+  try {
+    if (fs.existsSync(STORE_PATH)) {
+      return new Map(Object.entries(JSON.parse(fs.readFileSync(STORE_PATH, 'utf8'))));
+    }
+  } catch (err) {
+    console.error('[share] failed to load store:', err.message);
+  }
+  return new Map();
+}
+
+function saveStore(shares) {
+  try {
+    fs.writeFileSync(STORE_PATH, JSON.stringify(Object.fromEntries(shares)), 'utf8');
+  } catch (err) {
+    console.error('[share] failed to save store:', err.message);
+  }
+}
+
+const shares = loadStore();
 
 const ShareSchema = z.object({
   code: z.string().min(1).max(200_000),
@@ -23,6 +45,7 @@ router.post('/', (req, res) => {
   }
   const id = crypto.randomBytes(5).toString('hex'); // 10-char hex
   shares.set(id, { ...result.data, createdAt: Date.now() });
+  saveStore(shares);
   console.log('[share] created', id, result.data.componentName);
   res.json({ id, url: `/share/${id}` });
 });
