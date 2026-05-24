@@ -10,14 +10,20 @@ export function SwarmMatrix() {
 
   const BTN: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    height: 28, minWidth: 80, padding: '0 10px',
-    fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
-    border: '1px solid #334155', borderRadius: 4,
-    background: '#1e293b', color: '#94a3b8',
+    height: 36, minWidth: 80, padding: '0 16px',
+    fontSize: 13, fontWeight: 500,
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+    background: 'rgba(255,255,255,0.05)', color: '#ffffff',
     cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    gap: 6,
   };
-  const BTN_BLUE: React.CSSProperties  = { ...BTN, background: '#1e3a5f', border: '1px solid #3b82f6', color: '#93c5fd' };
-  const BTN_ON: React.CSSProperties    = { ...BTN, background: '#052e16', border: '1px solid #22c55e', color: '#4ade80' };
+  // primary = green (ONLINE), secondary = blue (CONFIGURE/Dashboard), warning = orange
+  const BTN_BLUE: React.CSSProperties = { ...BTN, background: '#3b82f6', border: '1px solid #3b82f6' };
+  const BTN_ON: React.CSSProperties   = { ...BTN, background: '#22c55e', border: '1px solid #22c55e', color: '#000', fontWeight: 600 };
+  const BTN_WARN: React.CSSProperties = { ...BTN, background: '#f59e0b', border: '1px solid #f59e0b', color: '#000' };
+  const BTN_SM: React.CSSProperties   = { ...BTN, height: 32, minWidth: 60, padding: '0 12px' };
+  const BTN_XS: React.CSSProperties   = { ...BTN_SM, height: 24, fontSize: 10 };
 
   const send = () => {
     if (!prompt.trim() || loading) return;
@@ -57,16 +63,16 @@ export function SwarmMatrix() {
         <button style={BTN} onClick={() => setMode(m => m === 'ROUTER' ? 'DIRECT' : 'ROUTER')}>
           MODE: {mode}
         </button>
-        <button style={{ ...BTN, color: '#fbbf24', borderColor: '#78350f' }}>KV {kvCount}</button>
+        <button style={BTN_WARN}>KV {kvCount}</button>
         <button style={BTN} onClick={() => setKvCount(0)}>CLEAR KV</button>
         <button style={BTN_BLUE}>CONFIGURE</button>
         <button style={BTN}>HISTORY (241)</button>
         <button style={BTN}>RAG</button>
         <button style={BTN}>ConvertDOCS</button>
-        <button style={{ ...BTN, color: '#a78bfa', borderColor: '#4c1d95' }}>CACHE ?</button>
-        <button style={BTN}>?</button>
-        <button style={{ ...BTN, background: '#1e293b', color: '#f1f5f9' }}>☀ Light</button>
-        <button style={{ ...BTN, ...BTN_BLUE }}>Dashboard</button>
+        <button style={BTN}>CACHE ?</button>
+        <button style={{ ...BTN, minWidth: 36, padding: '0' }}>?</button>
+        <button style={BTN}>☀ Light</button>
+        <button style={BTN_BLUE}>Dashboard</button>
       </div>
 
       {/* Status bar */}
@@ -86,7 +92,7 @@ export function SwarmMatrix() {
           <div style={{ padding: '8px 10px', borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
               {['LLAMA', 'MLX', 'vLLM'].map(e => (
-                <button key={e} style={{ ...BTN, flex: 1, minWidth: 0, height: 24, fontSize: 10, background: e === 'LLAMA' ? '#312e81' : '#1e293b', color: e === 'LLAMA' ? '#a5b4fc' : '#64748b', borderColor: e === 'LLAMA' ? '#4f46e5' : '#334155' }}>{e}</button>
+                <button key={e} style={{ ...BTN_XS, flex: 1, minWidth: 0, background: e === 'LLAMA' ? '#312e81' : 'rgba(255,255,255,0.05)', color: e === 'LLAMA' ? '#a5b4fc' : 'rgba(255,255,255,0.3)', borderColor: e === 'LLAMA' ? '#4f46e5' : 'rgba(255,255,255,0.1)' }}>{e}</button>
               ))}
             </div>
             <div style={{ fontSize: 10, color: '#64748b' }}>Using: LLAMA</div>
@@ -104,7 +110,7 @@ export function SwarmMatrix() {
             <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>SELECT AGENTS</div>
             <div style={{ display: 'flex', gap: 4 }}>
               {['SAFE', 'BALANCED', 'MAX', 'MIXED'].map(p => (
-                <button key={p} style={{ ...BTN, fontSize: 10, height: 22, minWidth: 0, flex: 1, padding: '0 4px', background: p === 'MAX' ? '#1e3a5f' : '#1e293b', color: p === 'MAX' ? '#93c5fd' : '#64748b', borderColor: p === 'MAX' ? '#3b82f6' : '#334155' }}>{p}</button>
+                <button key={p} style={{ ...BTN_XS, flex: 1, minWidth: 0, padding: '0 4px', ...(p === 'MAX' ? BTN_BLUE : {}) }}>{p}</button>
               ))}
             </div>
           </div>
@@ -164,10 +170,10 @@ export function SwarmMatrix() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button onClick={send} disabled={loading}
-                style={{ ...BTN_BLUE, height: 36, minWidth: 72, opacity: loading ? 0.6 : 1 }}>
+                style={{ ...BTN_BLUE, opacity: loading ? 0.6 : 1 }}>
                 {loading ? '⏳' : '▶ Send'}
               </button>
-              <button style={{ ...BTN, height: 28, minWidth: 72 }}>RAG ctx</button>
+              <button style={BTN_SM}>RAG ctx</button>
             </div>
           </div>
         </div>
