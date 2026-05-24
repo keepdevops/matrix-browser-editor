@@ -21,7 +21,7 @@ function resolveClientChain(preferredBackend, hasScreenshot) {
   const hasSwarm = Boolean(process.env.SWARM_URL);
 
   if (preferredBackend === 'claude')   return [claudeClient];
-  if (preferredBackend === 'llamacpp') return hasLlama ? [llamaCppClient, claudeClient] : [claudeClient];
+  if (preferredBackend === 'llamacpp') return hasLlama ? [llamaCppClient] : [claudeClient];
   if (preferredBackend === 'swarm')    return hasSwarm  ? [swarmClient,    claudeClient] : [claudeClient];
 
   // 'auto': llama.cpp → swarm → Claude
