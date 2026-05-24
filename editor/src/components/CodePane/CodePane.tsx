@@ -28,6 +28,7 @@ import { VersionHistoryPanel } from './VersionHistoryPanel';
 import { useHistoryStore } from '../../store/historyStore';
 import { parseComponents, patchComponent } from '../../lib/parseComponents';
 import { useDraftAutosave, clearDraft } from '../../hooks/useDraftAutosave';
+import { Button } from '../shared/Button';
 
 function formatAge(ts: number): string {
   const secs = Math.floor((Date.now() - ts) / 1000);
@@ -35,12 +36,6 @@ function formatAge(ts: number): string {
   if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
   return `${Math.floor(secs / 3600)}h ago`;
 }
-
-const BTN: React.CSSProperties = {
-  padding: '3px 10px', borderRadius: 6, background: '#1e293b',
-  border: '1px solid #334155', color: '#94a3b8', cursor: 'pointer', fontSize: 12,
-};
-const BTN_PRIMARY: React.CSSProperties = { ...BTN, background: '#6366f1', border: '1px solid #6366f1', color: '#fff' };
 
 async function formatCode(code: string, lang: string): Promise<string> {
   const [prettier, babelPlugin, tsPlugin, estreePlugin] = await Promise.all([
@@ -226,23 +221,24 @@ export function CodePane() {
           </span>
         )}
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
-          <button onClick={handleNewFile} title="New blank file" style={BTN}>+ New</button>
-          <button onClick={() => { setPasteVal(''); setShowPaste(true); }} title="Paste a React component" style={{ ...BTN, color: '#7dd3fc', borderColor: '#1d4ed8' }}>📋 Paste</button>
-          <button onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)" style={{ ...BTN, opacity: historyIndex <= 0 ? 0.35 : 1, padding: '3px 7px' }}>↩</button>
-          <button onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Shift+Z)" style={{ ...BTN, opacity: historyIndex >= history.length - 1 ? 0.35 : 1, padding: '3px 7px' }}>↪</button>
-          <button onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier" style={{ ...BTN, opacity: formatting || !code ? 0.5 : 1 }}>{formatting ? '…' : '✦'}</button>
-          <button onClick={toggleDiffMode} style={isDiffMode ? BTN_PRIMARY : BTN}>{isDiffMode ? 'Diff On' : 'Diff Off'}</button>
-          <button onClick={() => setShowHistory(h => !h)} title="Version history" style={{ ...BTN, color: showHistory ? '#a5b4fc' : '#94a3b8', borderColor: showHistory ? '#4f46e5' : '#334155', background: showHistory ? 'rgba(99,102,241,0.15)' : '#1e293b' }}>⏱ History</button>
-          <button onClick={() => navigator.clipboard.writeText(code)} style={BTN}>Copy</button>
-          <button onClick={() => { pushHistory({ code, componentName, language, timestamp: Date.now(), source: 'save' }); saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }} disabled={!code} style={{ ...BTN, opacity: !code ? 0.5 : 1, color: '#a5b4fc', borderColor: '#4f46e5' }}>Save</button>
-          <button
+          <Button size="sm" onClick={handleNewFile} title="New blank file">+ New</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setPasteVal(''); setShowPaste(true); }} title="Paste a React component">📋 Paste</Button>
+          <Button size="icon" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">↩</Button>
+          <Button size="icon" onClick={redo} disabled={historyIndex >= history.length - 1} title="Redo (Ctrl+Shift+Z)">↪</Button>
+          <Button size="icon" onClick={handleFormat} disabled={formatting || !code} title="Format with Prettier">{formatting ? '…' : '✦'}</Button>
+          <Button size="sm" variant={isDiffMode ? 'secondary' : 'default'} onClick={toggleDiffMode}>{isDiffMode ? 'Diff On' : 'Diff Off'}</Button>
+          <Button size="sm" variant={showHistory ? 'secondary' : 'default'} onClick={() => setShowHistory(h => !h)} title="Version history">⏱ History</Button>
+          <Button size="sm" onClick={() => navigator.clipboard.writeText(code)}>Copy</Button>
+          <Button size="sm" variant="secondary" onClick={() => { pushHistory({ code, componentName, language, timestamp: Date.now(), source: 'save' }); saveToLibrary({ name: componentName, code, language, description: lastComponent?.description || '' }); markSaved(); clearDraft(); }} disabled={!code}>Save</Button>
+          <Button
+            size="sm"
+            variant={shareId ? 'primary' : 'default'}
             onClick={async () => { const result = await share(); if (result) { setTimeout(dismissShare, 4000); } }}
             disabled={shareLoading || !code}
             title={shareId ? `Copied! Share ID: ${shareId}` : 'Share — copies link to clipboard'}
-            style={{ ...BTN, opacity: shareLoading || !code ? 0.5 : 1, color: shareId ? '#34d399' : '#94a3b8', borderColor: shareId ? '#059669' : '#334155' }}
           >
             {shareLoading ? '⏳' : shareId ? '✓ Copied' : '🔗 Share'}
-          </button>
+          </Button>
           <input ref={imageUploadRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAndInsert(f); e.target.value = ''; }} />
           <ExportMenu
             disabled={!code}
@@ -263,7 +259,7 @@ export function CodePane() {
               { label: 'Upload image asset', icon: '📎', loading: uploading, onClick: () => imageUploadRef.current?.click() },
             ]}
           />
-          <button onClick={() => review(code)} disabled={reviewStreaming || !code} title="AI code review" style={{ ...BTN, opacity: reviewStreaming || !code ? 0.5 : 1 }}>{reviewStreaming ? '⏳' : '🔍 Review'}</button>
+          <Button size="sm" onClick={() => review(code)} disabled={reviewStreaming || !code} title="AI code review">{reviewStreaming ? '⏳' : '🔍 Review'}</Button>
           <RefactorMenu
             disabled={!code}
             onSelect={(prompt) => sendRefactor({ prompt, templateCode: code })}
@@ -307,10 +303,10 @@ export function CodePane() {
               onKeyDown={e => { if (e.key === 'Enter') apply(); if (e.key === 'Escape') dismiss(); }}
               placeholder="Edit instruction…"
               style={{ background: 'transparent', border: 'none', outline: 'none', color: '#f1f5f9', fontSize: 12, width: 180 }} />
-            <button onClick={apply} disabled={inlineLoading || !instruction.trim()} style={{ ...BTN_PRIMARY, padding: '2px 8px', fontSize: 11, opacity: inlineLoading || !instruction.trim() ? 0.5 : 1 }}>
+            <Button size="sm" variant="secondary" onClick={apply} disabled={inlineLoading || !instruction.trim()}>
               {inlineLoading ? '…' : '↵'}
-            </button>
-            <button onClick={dismiss} style={{ ...BTN, padding: '2px 6px', fontSize: 11 }}>✕</button>
+            </Button>
+            <Button size="icon" onClick={dismiss}>✕</Button>
           </div>
         )}
       </div>
@@ -335,12 +331,12 @@ export function CodePane() {
             {recentPaths.length > 0 && (
               <div style={{ marginTop: 8 }}>
                 <p style={{ margin: '0 0 6px', color: '#475569', fontSize: 11 }}>Recent:</p>
-                {recentPaths.map(p => <button key={p} onClick={() => setInjectPath(p)} style={{ ...BTN, display: 'block', textAlign: 'left', fontSize: 11, width: '100%', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</button>)}
+                {recentPaths.map(p => <Button key={p} size="sm" onClick={() => setInjectPath(p)} className="w-full text-left justify-start overflow-hidden text-ellipsis">{p}</Button>)}
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowInject(false)} style={BTN}>Cancel</button>
-              <button onClick={handleInject} disabled={!injectPath.trim()} style={{ ...BTN_PRIMARY, opacity: injectPath.trim() ? 1 : 0.5 }}>Inject</button>
+              <Button size="sm" onClick={() => setShowInject(false)}>Cancel</Button>
+              <Button size="sm" variant="secondary" onClick={handleInject} disabled={!injectPath.trim()}>Inject</Button>
             </div>
           </div>
         </div>
@@ -352,7 +348,7 @@ export function CodePane() {
           <div onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setShowPaste(false); }} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 24, width: 640, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>PASTE REACT COMPONENT</span>
-              <button onClick={() => setShowPaste(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16 }}>✕</button>
+              <Button size="icon" onClick={() => setShowPaste(false)} className="text-slate-500 bg-transparent border-0">✕</Button>
             </div>
             <textarea
               autoFocus
@@ -362,14 +358,15 @@ export function CodePane() {
               style={{ height: 320, background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#f1f5f9', fontSize: 12, padding: 12, fontFamily: 'monospace', resize: 'vertical', outline: 'none' }}
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowPaste(false)} style={BTN}>Cancel</button>
-              <button
+              <Button size="sm" onClick={() => setShowPaste(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                variant="secondary"
                 onClick={() => { handleLoadPasted(pasteVal); setShowPaste(false); }}
                 disabled={!pasteVal.trim()}
-                style={{ ...BTN_PRIMARY, opacity: pasteVal.trim() ? 1 : 0.5 }}
               >
                 Load Component
-              </button>
+              </Button>
             </div>
           </div>
         </div>

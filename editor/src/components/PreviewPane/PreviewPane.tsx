@@ -16,16 +16,7 @@ import { ScreenshotModal } from './ScreenshotModal';
 import { AiDiffModal } from '../shared/AiDiffModal';
 import { useConsoleCapture } from '../../hooks/useConsoleCapture';
 import { PreviewOverflowMenu } from './PreviewOverflowMenu';
-
-const BTN: React.CSSProperties = {
-  padding: '3px 10px',
-  borderRadius: 6,
-  background: '#1e293b',
-  border: '1px solid #334155',
-  color: '#94a3b8',
-  cursor: 'pointer',
-  fontSize: 12,
-};
+import { Button } from '../shared/Button';
 
 const VIEWPORTS = [
   { label: '📱', title: 'Mobile (375px)', width: 375 },
@@ -101,51 +92,42 @@ export function PreviewPane() {
           )}
           <div style={{ display: 'flex', gap: 2, background: '#1e293b', borderRadius: 6, padding: 2 }}>
             {VIEWPORTS.map(vp => (
-              <button
+              <Button
                 key={vp.width}
+                size="icon"
                 title={vp.title}
                 onClick={() => { setViewportWidth(vp.width); if (vp.width === 0) setShowFrame(false); }}
-                style={{
-                  ...BTN,
-                  background: viewportWidth === vp.width ? '#334155' : 'transparent',
-                  border: 'none',
-                  padding: '2px 8px',
-                  fontSize: 13,
-                }}
+                variant={viewportWidth === vp.width ? 'secondary' : 'default'}
+                className="text-sm border-0"
               >
                 {vp.label}
-              </button>
+              </Button>
             ))}
           </div>
           {/* Zoom controls */}
           <div style={{ display: 'flex', gap: 2, background: '#1e293b', borderRadius: 6, padding: 2 }}>
             {[75, 100, 125, 150].map(z => (
-              <button
+              <Button
                 key={z}
+                size="sm"
                 title={`${z}% zoom`}
                 onClick={() => setZoom(z)}
-                style={{
-                  ...BTN,
-                  background: zoom === z ? '#334155' : 'transparent',
-                  border: 'none',
-                  padding: '2px 6px',
-                  fontSize: 10,
-                  color: zoom === z ? '#f1f5f9' : '#64748b',
-                  fontWeight: zoom === z ? 700 : 400,
-                }}
+                variant={zoom === z ? 'secondary' : 'default'}
+                className="border-0 min-w-0 px-2"
               >
                 {z}%
-              </button>
+              </Button>
             ))}
           </div>
           {viewportWidth > 0 && (
-            <button
+            <Button
+              size="sm"
               onClick={() => setShowFrame(f => !f)}
               title="Toggle device frame"
-              style={{ ...BTN, color: showFrame ? '#a5b4fc' : '#64748b', borderColor: showFrame ? '#4f46e5' : '#334155', background: showFrame ? 'rgba(99,102,241,0.15)' : '#1e293b', fontSize: 11 }}
+              variant={showFrame ? 'secondary' : 'default'}
             >
               ⬜ Frame
-            </button>
+            </Button>
           )}
           {autoScore !== null && (
             <span
@@ -161,27 +143,30 @@ export function PreviewPane() {
               a11y {autoScore}
             </span>
           )}
-          <button
+          <Button
+            size="sm"
+            variant={themeCompare ? 'secondary' : 'default'}
             onClick={() => setThemeCompare(c => !c)}
             title="Side-by-side dark/light theme comparison"
-            style={{ ...BTN, color: themeCompare ? '#a5b4fc' : '#94a3b8', borderColor: themeCompare ? '#4f46e5' : '#334155', background: themeCompare ? 'rgba(99,102,241,0.15)' : '#1e293b' }}
           >
             ◑ Themes
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant={splitView ? 'secondary' : 'default'}
             onClick={() => setSplitView(s => !s)}
             title="Toggle mobile/desktop split view"
-            style={{ ...BTN, color: splitView ? '#a5b4fc' : '#94a3b8', borderColor: splitView ? '#4f46e5' : '#334155', background: splitView ? 'rgba(99,102,241,0.15)' : '#1e293b' }}
           >
             ⧉ Split
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant={inspectMode ? 'primary' : 'default'}
             onClick={() => { setInspectMode(m => !m); dismissInspect(); }}
             title="Click-to-inspect elements"
-            style={{ ...BTN, color: inspectMode ? '#34d399' : '#94a3b8', borderColor: inspectMode ? '#059669' : '#334155', background: inspectMode ? 'rgba(16,185,129,0.12)' : '#1e293b' }}
           >
             🔎 Inspect
-          </button>
+          </Button>
           <PreviewOverflowMenu actions={[
             {
               label: `> Console${consoleLogs.length > 0 ? ` (${consoleLogs.length})` : ''}`,

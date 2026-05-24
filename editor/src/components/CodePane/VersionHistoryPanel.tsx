@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useHistoryStore, type VersionEntry, type VersionSource } from '../../store/historyStore';
 import { useEditorStore } from '../../store/editorStore';
 import { DiffTooltip } from './DiffTooltip';
+import { Button } from '../shared/Button';
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -56,14 +57,14 @@ export function VersionHistoryPanel({ onClose }: Props) {
           {entries.length > 0 && (
             confirmClear ? (
               <>
-                <button onClick={() => { clear(); setConfirmClear(false); }} style={DANGER_BTN}>Confirm</button>
-                <button onClick={() => setConfirmClear(false)} style={GHOST_BTN}>Cancel</button>
+                <Button size="sm" variant="destructive" onClick={() => { clear(); setConfirmClear(false); }}>Confirm</Button>
+                <Button size="sm" onClick={() => setConfirmClear(false)}>Cancel</Button>
               </>
             ) : (
-              <button onClick={() => setConfirmClear(true)} style={GHOST_BTN} title="Clear all history">Clear</button>
+              <Button size="sm" onClick={() => setConfirmClear(true)} title="Clear all history">Clear</Button>
             )
           )}
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>
+          <Button size="icon" onClick={onClose} className="text-slate-500 bg-transparent border-0">✕</Button>
         </div>
       </div>
 
@@ -96,20 +97,8 @@ export function VersionHistoryPanel({ onClose }: Props) {
                 {entry.componentName} · {entry.code.split('\n').length} lines · {entry.language}
               </div>
             </div>
-            <button
-              onClick={() => handleRestore(entry)}
-              title="Restore this version"
-              style={RESTORE_BTN}
-            >
-              ↺
-            </button>
-            <button
-              onClick={() => remove(entry.id)}
-              title="Remove entry"
-              style={{ background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}
-            >
-              ✕
-            </button>
+            <Button size="icon" onClick={() => handleRestore(entry)} title="Restore this version">↺</Button>
+            <Button size="icon" onClick={() => remove(entry.id)} title="Remove entry" className="text-slate-700 bg-transparent border-0">✕</Button>
           </div>
         ))}
       </div>
@@ -125,13 +114,3 @@ export function VersionHistoryPanel({ onClose }: Props) {
   );
 }
 
-const GHOST_BTN: React.CSSProperties = {
-  padding: '2px 8px', borderRadius: 5, background: 'transparent',
-  border: '1px solid #334155', color: '#64748b', cursor: 'pointer', fontSize: 11,
-};
-const DANGER_BTN: React.CSSProperties = { ...GHOST_BTN, borderColor: '#7f1d1d', color: '#f87171' };
-const RESTORE_BTN: React.CSSProperties = {
-  flexShrink: 0, padding: '3px 8px', borderRadius: 5,
-  background: 'transparent', border: '1px solid #334155',
-  color: '#94a3b8', cursor: 'pointer', fontSize: 13,
-};
