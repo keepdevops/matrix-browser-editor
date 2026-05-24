@@ -6,6 +6,7 @@ import { LibraryPanel } from './LibraryPanel';
 import { TokensPanel } from './TokensPanel';
 import { SnapshotsPanel } from './SnapshotsPanel';
 import { AnimationPanel } from './AnimationPanel';
+import { ModelPanel } from './ModelPanel';
 
 const TABS = [
   { id: 'templates' as const, label: 'Templates', icon: '⚡' },
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'snapshots' as const, label: 'Snapshots', icon: '📷' },
   { id: 'connector' as const, label: 'Connector', icon: '🔌' },
   { id: 'library' as const, label: 'Library', icon: '📦' },
+  { id: 'model'   as const, label: 'Model',   icon: '🤖' },
 ] as const;
 
 export function Sidebar() {
@@ -64,6 +66,7 @@ export function Sidebar() {
         {sidebarTab === 'snapshots' && <SnapshotsPanel />}
         {sidebarTab === 'connector' && <ConnectorPanel />}
         {sidebarTab === 'library' && <LibraryPanel />}
+        {sidebarTab === 'model' && <ModelPanel />}
       </div>
     </div>
   );

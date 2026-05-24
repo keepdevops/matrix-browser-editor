@@ -37,6 +37,7 @@ const PromptRequestSchema = z.object({
   screenshotImage: z.string()
     .regex(/^[A-Za-z0-9+/=]+$/, 'screenshotImage must be plain base64')
     .optional(),
+  preferredBackend: z.enum(['auto', 'llamacpp', 'swarm', 'claude']).default('auto'),
 });
 
 function validate(schema, data) {

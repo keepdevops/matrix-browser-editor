@@ -9,8 +9,9 @@ interface SessionState {
   connectorMode: 'none' | 'export' | 'analyze' | 'inject' | 'live';
   targetProjectPath: string;
   recentPaths: string[];
-  sidebarTab: 'templates' | 'style' | 'tokens' | 'animation' | 'snapshots' | 'connector' | 'library';
+  sidebarTab: 'templates' | 'style' | 'tokens' | 'animation' | 'snapshots' | 'connector' | 'library' | 'model';
   pendingScreenshot: string | null;
+  preferredBackend: 'auto' | 'llamacpp' | 'swarm' | 'claude';
   setStyleSystem: (s: StyleSystem) => void;
   setTheme: (t: Theme) => void;
   setActiveTemplate: (t: Template | null) => void;
@@ -21,6 +22,7 @@ interface SessionState {
   setPendingScreenshot: (url: string | null) => void;
   pendingChatMessage: string | null;
   setPendingChatMessage: (msg: string | null) => void;
+  setPreferredBackend: (b: SessionState['preferredBackend']) => void;
 }
 
 export const useSessionStore = create<SessionState>()(persist((set) => ({
@@ -33,6 +35,7 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   sidebarTab: 'templates',
   pendingScreenshot: null,
   pendingChatMessage: null,
+  preferredBackend: 'auto',
 
   setStyleSystem: (styleSystem) => set({ styleSystem }),
   setTheme: (theme) => set({ theme }),
@@ -45,7 +48,8 @@ export const useSessionStore = create<SessionState>()(persist((set) => ({
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setPendingScreenshot: (pendingScreenshot) => set({ pendingScreenshot }),
   setPendingChatMessage: (pendingChatMessage) => set({ pendingChatMessage }),
+  setPreferredBackend: (preferredBackend) => set({ preferredBackend }),
 }), {
   name: 'session-store',
-  partialize: (s) => ({ styleSystem: s.styleSystem, theme: s.theme, recentPaths: s.recentPaths }),
+  partialize: (s) => ({ styleSystem: s.styleSystem, theme: s.theme, recentPaths: s.recentPaths, preferredBackend: s.preferredBackend }),
 }));

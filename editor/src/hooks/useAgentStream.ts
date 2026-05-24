@@ -16,7 +16,7 @@ interface StreamOptions {
 export function useAgentStream() {
   const { addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, messages, pendingEdit: pending, setPendingEdit: setPending } = useAgentStore();
   const { code: currentCode, setCode, setComponentName, setLanguage } = useEditorStore();
-  const { styleSystem, theme, setRightTab } = useSessionStore();
+  const { styleSystem, theme, setRightTab, preferredBackend } = useSessionStore();
   const { openTab, tabs, activeTabId, setActiveTab } = useFileTabStore();
   const { push: pushHistory } = useHistoryStore();
 
@@ -36,7 +36,7 @@ export function useAgentStream() {
       const response = await fetch(`${SERVER}/api/agent/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, styleSystem, theme, templateCode, history, screenshotImage: imageBase64 }),
+        body: JSON.stringify({ prompt, styleSystem, theme, templateCode, history, screenshotImage: imageBase64, preferredBackend }),
       });
 
       if (!response.ok) {
@@ -97,7 +97,7 @@ export function useAgentStream() {
       console.error('[useAgentStream] error:', message);
       setError(message);
     }
-  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, setRightTab, styleSystem, theme, messages, setPending]);
+  }, [addUserMessage, startAssistantStream, appendStreamDelta, finalizeStream, setError, setCode, setComponentName, setLanguage, setRightTab, styleSystem, theme, preferredBackend, messages, setPending]);
 
   const confirmPending = useCallback(() => {
     if (!pending) return;

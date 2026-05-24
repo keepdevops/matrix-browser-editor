@@ -51,10 +51,18 @@ app.use('/api/preview', previewRouter);
 app.use('/api/connector', connectorRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.get('/api/status', (_req, res) => res.json({
-  swarmEnabled: Boolean(process.env.SWARM_URL),
-  swarmUrl: process.env.SWARM_URL || null,
-}));
+app.get('/api/status', async (_req, res) => {
+  const llamaOnline = process.env.LLAMA_CPP_URL
+    ? await require('./services/llamaCppClient').checkHealth()
+    : false;
+  res.json({
+    swarmEnabled:    Boolean(process.env.SWARM_URL),
+    swarmUrl:        process.env.SWARM_URL || null,
+    llamaCppEnabled: Boolean(process.env.LLAMA_CPP_URL),
+    llamaCppUrl:     process.env.LLAMA_CPP_URL || null,
+    llamaCppOnline:  llamaOnline,
+  });
+});
 
 app.use((err, _req, res, _next) => {
   console.error('[server] unhandled error:', err.message);
