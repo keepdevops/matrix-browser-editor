@@ -13,6 +13,7 @@
     "test:swarm-matrix": "node run.js swarm-matrix --url http://localhost:5173",
     "test:share": "node run.js share --url http://localhost:5173",
     "test:llamacpp": "node run.js llamacpp --url http://localhost:5173",
+    "test:button": "node run.js button --url http://localhost:5173",
     "headed": "node run.js --headed --url http://localhost:5173",
     "install:browsers": "npx playwright install chromium",
     "shutdown": "bash scripts/shutdown.sh"
