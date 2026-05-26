@@ -7,7 +7,7 @@ const SHORTCUTS = [
   { keys: `${MOD}+P`, action: 'Format with Prettier' },
   { keys: `${MOD}+D`, action: 'Toggle diff view' },
   { keys: `${MOD}+Z`, action: 'Undo' },
-  { keys: `${MOD}+Shift+Z`, action: 'Redo' },
+  { keys: `${MOD}+Shift+Z / ${MOD}+Y`, action: 'Redo' },
   { keys: `${MOD}+\\`, action: 'Toggle sidebar' },
   { keys: `${MOD}+K`, action: 'Open sidebar (templates)' },
   { keys: `${MOD}+J`, action: 'Toggle chat' },
@@ -23,17 +23,17 @@ const FEATURES = [
   {
     icon: '💬',
     title: 'AI Chat',
-    desc: 'Describe a component and the AI generates it instantly. Attach a screenshot to edit visually. Select code in the editor and use the inline AI toolbar to edit just that selection.',
+    desc: 'Describe a component and the AI generates it instantly. Attach a screenshot to edit visually. Select code in the editor and use the inline AI toolbar to edit that selection — review the diff before accepting. Use ↑/↓ to cycle prompt history, ⚗ Variants for 3 style alternatives, and Retry to regenerate.',
   },
   {
     icon: '▶',
     title: 'Live Preview',
-    desc: 'See your component render in real time. Use 📱/⊞/⊡ to test responsive widths. ⧉ Split shows mobile + desktop side by side. 🔎 Inspect clicks elements to see their styles.',
+    desc: 'See your component render in real time. Use 📱/⊞/⊡ to test responsive widths. ⧉ Split shows mobile + desktop side by side. ◑ Themes compares dark/light. 🔎 Inspect clicks elements to see their computed styles.',
   },
   {
     icon: '</>',
     title: 'Code Editor',
-    desc: 'Full Monaco editor with syntax highlighting, undo/redo, Prettier formatting, and diff mode. Component tabs let you focus on one export at a time. File tabs keep multiple components open.',
+    desc: 'Full Monaco editor with syntax highlighting, undo/redo, Prettier (Cmd+P), and diff mode (Cmd+D). Component tabs focus on one export at a time; file tabs keep multiple components open. Drafts autosave and restore on reload. Open Version History to browse and restore past saves.',
   },
   {
     icon: '🧩',
@@ -43,27 +43,42 @@ const FEATURES = [
   {
     icon: '📚',
     title: 'Library',
-    desc: 'Click Save in the Code tab to add a component to your library. Library items appear in the Canvas palette and persist across sessions.',
+    desc: 'Click Save (Cmd+S) to add the current component to your library. Library items appear in the Canvas palette and persist across sessions.',
   },
   {
     icon: '🎨',
     title: 'Tokens',
-    desc: 'Design tokens inject CSS variables (--color-primary, --font-family, etc.) into your component. Switch Dark/Light presets or pick a Google Font live.',
+    desc: 'Design tokens inject CSS variables (--color-primary, --font-family, etc.) into your component. Switch Dark/Light presets, pick a Google Font live, or generate a palette with AI.',
   },
   {
     icon: '✨',
     title: 'Animation',
-    desc: 'Pick animation presets (Fade In, Slide Up, Bounce…) and a duration/easing. Click "Inject" to add @keyframes + CSS classes to your component.',
+    desc: 'Pick animation presets (Fade In, Slide Up, Bounce…) and a duration/easing. Click "Inject" to add @keyframes + CSS classes directly into your component.',
   },
   {
     icon: '⬇',
     title: 'Export',
-    desc: 'Export to your local project via the Connector sidebar. Download as ZIP. Share a link via the 🔗 Share button. Push to a GitHub Gist with Gist ↗.',
+    desc: 'Download as .tsx/.jsx, ZIP, or push to a GitHub Gist. Generate AI tests (🧪), docs (📄), or Storybook stories (📖). Share a link via 🔗 Share; copy the embed snippet after sharing. Inject into an existing file or export to your filesystem via the Connector.',
+  },
+  {
+    icon: '🔍',
+    title: 'Review',
+    desc: 'Click 🔍 Review to stream a full AI code review of the current component — suggestions, accessibility notes, and potential issues.',
+  },
+  {
+    icon: '🔌',
+    title: 'Connector',
+    desc: 'Link a local project path in the Connector panel (🔌 sidebar tab). Use "Export to filesystem" in the Export menu to push code directly to that file.',
+  },
+  {
+    icon: '🤖',
+    title: 'Model',
+    desc: 'Switch AI backends in the Model panel (🤖 sidebar tab): Auto (llama.cpp → Swarm → Claude), llama.cpp, Swarm, or Claude. Live status indicators show which servers are online.',
   },
   {
     icon: '📸',
     title: 'Screenshots',
-    desc: 'Capture the preview, then "Edit with AI" to describe changes visually. Screenshots are saved to Snapshots in the sidebar.',
+    desc: 'Capture the live preview as a PNG, then "Edit with AI" to describe visual changes. Screenshots are saved to the Snapshots panel (📷) for later restore.',
   },
 ];
 
